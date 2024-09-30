@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "prisma generate && ts-node src/server.ts",
+    "start": "ts-node src/server.ts",
     "seed": "ts-node prisma/seed.ts",
     "dev": "ts-node-dev --exit-child --transpile-only --ignore-watch node_modules src/server.ts"
   },
