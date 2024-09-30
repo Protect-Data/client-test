@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: "postgresql://doadmin:AVNS_8dBFTv2nLfQszc2EdNU@protect-data-do-user-17302983-0.i.db.ondigitalocean.com:25060/defaultdb?sslmode=require"
+      DO_SPACE_URL: "https://nyc3.digitaloceanspaces.com"
+      DO_SPACE_REGION: "NYC3"
+      DO_SPACES_ID: "DO00CB74U2RGKV49ZY2W"
+      DO_SPACES_SECRET: "tRpDaCEvgBKNXff/YIMv9gFj3c+3/J/XX7VO0h4T+vM"
+      DO_SPACES_BUCKET: "pdata-client-test"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./frontend:/app/public"
+      - "./src:/app/src"
+    depends_on:
+      - backend

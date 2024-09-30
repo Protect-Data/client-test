@@ -1,0 +1,88 @@
+"use client";
+
+import dayjs from "dayjs";
+import {
+  CheckSquare2,
+  Clock,
+  ExternalLink,
+  Lock,
+  MessageCircle,
+  Paperclip
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { useDrag } from "react-dnd";
+import ModalTaskDetail from "../tasks/ModalTask";
+
+export default function Card({
+  data,
+  onUpdate
+}: {
+  data: any;
+  onUpdate: () => void;
+}) {
+  const [modalTask, setModalTask] = useState<any>(null);
+  const ref = useRef(null);
+
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: "CARD",
+    item: data,
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging()
+    })
+  }));
+  drag(ref);
+
+  return (
+    <>
+      <div
+        ref={ref}
+        className="w-full bg-white shadow-lg border text-sm p-2.5 px-4 rounded-md"
+      >
+        <div className="w-full flex justify-between items-center">
+          <span
+            onClick={() => setModalTask(data)}
+            className="text-base font-semibold cursor-pointer flex items-center gap-x-2"
+          >
+            {data.privacy === "private" && <Lock size={16} />}
+            {data.title}
+          </span>
+          <div>
+            <button
+              onClick={() => setModalTask(data)}
+              className="p-2 bg-zinc-200 hover:bg-zinc-300 rounded-md transition duration-300 ease-in-out"
+            >
+              <ExternalLink size={12} />
+            </button>
+          </div>
+        </div>
+        <div className="w-full pt-2 text-zinc-500">
+          {data.description || "Descrição vazia."}
+        </div>
+        <div className="w-full mt-4 flex flex-col md:flex-row gap-y-4 justify-between items-center">
+          <div className="flex items-center gap-x-4 font-medium text-xs text-zinc-600">
+            <span className="flex items-center gap-x-1">
+              <CheckSquare2 size={12} /> {data.checklist.length} Checklist
+            </span>
+            <span className="flex items-center gap-x-1">
+              <MessageCircle size={12} /> {data.comments.length} Comentário
+              {data.comments.length !== 1 ? `s` : null}
+            </span>
+            <span className="flex items-center gap-x-1">
+              <Paperclip size={12} /> {data.files.length} Anexo
+              {data.files.length !== 1 ? `s` : null}
+            </span>
+          </div>
+          <span className="flex items-center justify-center gap-x-2 bg-protectdata-500/20 p-2 px-3 text-xs font-medium rounded-md">
+            <Clock size={12} /> {dayjs(data.created_at).format("DD/MM HH:mm")}
+          </span>
+        </div>
+      </div>
+      <ModalTaskDetail
+        open={modalTask ? true : false}
+        setOpen={() => setModalTask(false)}
+        data={modalTask}
+        handleUpdate={onUpdate}
+      />
+    </>
+  );
+}

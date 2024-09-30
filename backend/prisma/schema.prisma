@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  name       String
+  password   String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  manager    Boolean  @default(false)
+
+  tasks     Task[]
+  checklist CheckList[]
+  comments  Comment[]
+  commentCl CommentCL[]
+  files     File[]
+  logs      Log[]
+
+  @@map("users")
+}
+
+model Task {
+  id          String    @id @unique @default(uuid())
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  end_at      DateTime?
+  title       String
+  description String?
+  privacy     String    @default("public")
+  status      Int       @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  checklist CheckList[]
+  comments  Comment[]
+  files     File[]
+  logs      Log[]
+
+  @@map("tasks")
+}
+
+model Comment {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  comment    String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  replyId String?
+  parent  Comment?  @relation("CommentReplies", fields: [replyId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+
+  commentCl CommentCL[]
+
+  @@map("comments")
+}
+
+model CheckList {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  title      String
+  status     Int      @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  commentscl CommentCL[]
+
+  @@map("checklist")
+}
+
+model CommentCL {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  comment    String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  checklistId String
+  checklist   CheckList @relation(fields: [checklistId], references: [id])
+
+  replyId   String?
+  parent    CommentCL?  @relation("CommentReplies", fields: [replyId], references: [id])
+  replies   CommentCL[] @relation("CommentReplies")
+  Comment   Comment?    @relation(fields: [commentId], references: [id])
+  commentId String?
+
+  @@map("comments_cl")
+}
+
+model File {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  filename   String
+  mimetype   String
+  uri        String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  @@map("files")
+}
+
+model Diagnostic {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("diagnostics")
+}
+
+model Log {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  action     String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+
+  @@map("logs")
+}
