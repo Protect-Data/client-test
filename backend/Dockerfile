@@ -1,9 +1,8 @@
 FROM node:21-alpine
 
 WORKDIR /app
-COPY package*.json ./
+COPY package*.json tsconfig.json ./
 RUN npm install
-RUN npm install ts-node -D
 COPY . .
 EXPOSE 4000
 
