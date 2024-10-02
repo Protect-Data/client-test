@@ -5,7 +5,7 @@ services:
     build:
       context: ./backend
     container_name: backend
-    working_dir: /frontend
+    working_dir: /backend
     ports:
       - "4000:4000"
     volumes:
@@ -15,7 +15,7 @@ services:
     build:
       context: ./frontend
     container_name: frontend
-    working_dir: /backend
+    working_dir: /app
     ports:
       - "3000:3000"
     volumes:
