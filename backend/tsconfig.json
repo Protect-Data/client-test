@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "incremental": true,
+    "skipLibCheck": true,
     "sourceMap": true,
     "outDir": "dist",
     "strict": true,
