@@ -1,6 +1,6 @@
 FROM node:21-alpine
 
-WORKDIR /app
+WORKDIR /backend
 COPY package*.json ./
 RUN npm install
 COPY . .
@@ -11,4 +11,4 @@ RUN npx prisma migrate deploy
 RUN npx prisma migrate status
 RUN npx prisma db seed
 
-CMD [ "npm", "run", "dev" ]
+CMD [ "npm", "run", "start" ]

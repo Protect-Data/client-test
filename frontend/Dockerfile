@@ -3,7 +3,7 @@ FROM node:alpine AS base
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
-WORKDIR /app
+WORKDIR /frontend
 
 # Install dependencies based on the preferred package manager
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
@@ -16,7 +16,7 @@ RUN \
 
 # Rebuild the source code only when needed
 FROM base AS builder
-WORKDIR /app
+WORKDIR /frontend
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -28,7 +28,7 @@ RUN \
   fi
 
 FROM base AS runner
-WORKDIR /app
+WORKDIR /frontend
 
 ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
