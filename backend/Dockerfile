@@ -2,8 +2,9 @@ FROM node:21-alpine
 
 WORKDIR /backend
 COPY package*.json ./
-RUN npm install
+RUN npm install -g typescript
 COPY . .
+RUN tsc
 EXPOSE 4000
 
 RUN npx prisma generate

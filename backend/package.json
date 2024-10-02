@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "ts-node --max-old-space-size=512 src/server.ts",
+    "start": "ts-node src/server.ts",
     "seed": "ts-node prisma/seed.ts",
     "dev": "ts-node-dev --exit-child --transpile-only --ignore-watch node_modules src/server.ts"
   },
