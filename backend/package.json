@@ -4,8 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "start": "node --max-old-space-size=4096 dist/src/server.js",
+    "start": "ts-node src/server.ts",
     "seed": "ts-node prisma/seed.ts",
     "dev": "ts-node-dev --exit-child --transpile-only --ignore-watch node_modules src/server.ts"
   },
