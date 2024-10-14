@@ -15,9 +15,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Edit2Icon,
   ExternalLink,
   FilesIcon,
+  ListCheck,
   Loader2,
+  LockIcon,
+  MessageCircle,
+  Milestone,
   Paperclip,
   Plus,
   Reply,
@@ -27,6 +32,7 @@ import {
   Undo2,
   Upload,
   User2,
+  X,
   XCircle,
   XIcon
 } from "lucide-react";
@@ -37,8 +43,9 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import AvatarName from "../avatarName";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Tooltip from "../tooltip";
 
 const MAX_FILE_SIZE = 2000000;
 
@@ -292,6 +299,7 @@ export default function ModalTaskDetail({
   handleUpdate: () => void;
 }) {
   const { data: session }: any = useSession();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<string>("details");
   const [checklistDetail, setChecklistDetail] = useState<any>(null);
   const [fileDetail, setFileDetail] = useState<any>(null);
@@ -301,21 +309,46 @@ export default function ModalTaskDetail({
   const [taskData, setTaskData] = useState<any>(null);
   const [base64, setBase64] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
+  const tabParams = searchParams.get("tab");
+
+  const [editing, setEditing] = useState<boolean>(false);
+  const [team, setTeam] = useState<any>(null);
+  const [members, setMembers] = useState<any>([]);
+  const [formEdit, setFormEdit] = useState<any>({
+    title: "",
+    description: ""
+  });
 
   const [loadings, setLoadings] = useState<any>({
     addChecklist: false,
     finalizeChecklist: false,
     deleteChecklist: false,
-    addComment: false
+    addComment: false,
+    editTeam: false,
+    editTask: false
   });
 
   useEffect(() => {
     if (!data) {
       setTab("details");
+      setEditing(false);
     } else {
       setTaskData(data);
+      setMembers([...data.members.map((member: any) => member.id)]);
+      setFormEdit({
+        ...formEdit,
+        title: data.title,
+        description: data.description
+      });
+      if (tabParams) {
+        setTab(tabParams);
+      }
     }
-  }, [data]);
+  }, [data, tabParams]);
+
+  useEffect(() => {
+    if (editing && !team) getTeam();
+  }, [editing, team]);
 
   if (!data || !taskData) {
     return <></>;
@@ -348,6 +381,32 @@ export default function ModalTaskDetail({
       current: tab === "logs"
     }
   ];
+
+  const getTeam = async () => {
+    setLoadings({ ...loadings, editTeam: true });
+    try {
+      const { data: teamData } = await axios.get("/api/v1/tasks/team");
+      // console.log("getTeam", teamData);
+      setTeam(teamData);
+    } catch (error) {
+      console.error("getTeam", error);
+      setTeam([]);
+    } finally {
+      setLoadings({ ...loadings, editTeam: false });
+    }
+  };
+
+  const handleMember = (memId: string) => {
+    let back_members = [...members];
+    if (!back_members.includes(memId)) {
+      back_members.push(memId);
+    } else {
+      // remove form arr
+      const key = back_members.indexOf(memId);
+      back_members.splice(key, 1);
+    }
+    setMembers(back_members);
+  };
 
   const updateTaskData = async () => {
     try {
@@ -417,6 +476,7 @@ export default function ModalTaskDetail({
   };
 
   const handleDelete = async () => {
+    setLoadings({ ...loadings, editing: true });
     try {
       await axios.delete(`/api/v1/tasks?userId=${data.id}`);
       toast.success("Projeto excluído com sucesso");
@@ -425,6 +485,8 @@ export default function ModalTaskDetail({
     } catch (error) {
       console.error("getTasksList"), error;
       toast.error(`Falha ao recuperar as tarefas.`);
+    } finally {
+      setLoadings({ ...loadings, editing: false });
     }
   };
 
@@ -558,6 +620,30 @@ export default function ModalTaskDetail({
     }
   };
 
+  const handleUpdateTask = async () => {
+    setLoadings({ ...loadings, editing: true });
+    try {
+      const { data: query }: any = await axios.put(
+        `/api/v1/tasks/${taskData.id}`,
+        {
+          ...formEdit,
+          members
+        }
+      );
+      if (query.error) {
+        toast.error(query.error);
+        return false;
+      }
+      await updateTaskData();
+      toast.success("Tarefa atualizada com sucesso");
+    } catch (error) {
+      console.error("getTasksList"), error;
+      toast.error(`Falha ao atualizar tarefa.`);
+    } finally {
+      setLoadings({ ...loadings, editing: false });
+    }
+  };
+
   return (
     <Dialog open={open} onClose={setOpen} className="relative z-50">
       <DialogBackdrop
@@ -574,7 +660,7 @@ export default function ModalTaskDetail({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md bg-white text-zinc-400 hover:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+                className="rounded-md bg-white mt-3 text-zinc-400 hover:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
               >
                 <span className="sr-only">Close</span>
                 <XIcon aria-hidden="true" className="h-6 w-6" />
@@ -582,40 +668,39 @@ export default function ModalTaskDetail({
             </div>
             <div className="sm:flex sm:items-start">
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                <DialogTitle
-                  as="h3"
-                  className="text-lg capitalize font-semibold leading-6 text-zinc-900"
-                >
-                  {taskData.title}
-                </DialogTitle>
-                {taskData.description && taskData.description !== "" && (
-                  <div className="mt-2">
-                    <p className="text-sm text-zinc-500">
-                      {taskData.description}
-                    </p>
+                <div className="w-full flex justify-between items-center">
+                  <div>
+                    <DialogTitle
+                      as="h3"
+                      className="text-lg capitalize font-semibold leading-6 text-zinc-900 flex items-center gap-x-1.5"
+                    >
+                      {taskData.privacy === "private" && <LockIcon size={16} />}
+                      {taskData.title.substring(0, 20)}
+                      {taskData.title.length > 20 && `...`}
+                    </DialogTitle>
                   </div>
-                )}
-                {tab === "details" && (
-                  <div aria-label="Breadcrumb" className="flex">
+                  <div aria-label="Breadcrumb" className="flex pr-8">
                     <ol
                       role="list"
-                      className="flex items-center bg-black/10 rounded-md pr-4 mt-4"
+                      className="flex items-center bg-zinc-100 border border-zinc-200 rounded-md pr-4"
                     >
                       {["A Fazer", "Em Progresso", "Finalizado"].map(
                         (page: any, k: number) => (
                           <li key={page.name} className="p-2">
-                            <div className="flex items-center">
+                            <div className="flex items-center cursor-pointer">
                               {k > 0 && (
                                 <ChevronRight
                                   aria-hidden="true"
-                                  className="h-5 w-5 flex-shrink-0 text-zinc-400"
+                                  className={`h-5 w-5 flex-shrink-0 text-zinc-400 ${
+                                    taskData.status >= k ? `` : `opacity-25`
+                                  }`}
                                 />
                               )}
                               <div
                                 className={`ml-4 text-sm ${
                                   taskData.status >= k
                                     ? `font-bold text-zinc-800 hover:text-zinc-900`
-                                    : `font-medium text-zinc-500 hover:text-zinc-700`
+                                    : `font-medium text-zinc-300 hover:text-zinc-400`
                                 }`}
                               >
                                 {page}
@@ -626,7 +711,7 @@ export default function ModalTaskDetail({
                       )}
                     </ol>
                   </div>
-                )}
+                </div>
                 <div>
                   <div className="my-4">
                     <div className="border-b border-zinc-200">
@@ -634,12 +719,13 @@ export default function ModalTaskDetail({
                         {tabs.map((tab) => (
                           <button
                             key={tab.tab}
+                            disabled={editing}
                             onClick={() => setTab(tab.tab)}
                             className={classNames(
                               tab.current
                                 ? "border-zinc-500 text-zinc-600"
                                 : "border-transparent text-zinc-500 hover:border-zinc-200 hover:text-zinc-700",
-                              "flex outline-none whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium"
+                              "flex outline-none whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
                             )}
                           >
                             {tab.name}
@@ -662,118 +748,293 @@ export default function ModalTaskDetail({
                   </div>
                 </div>
                 {tab === "details" ? (
-                  <div className="text-left">
-                    <dl className="divide-y divide-zinc-100">
-                      <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-                        <dt className="text-sm font-medium leading-6 text-zinc-900">
-                          Tarefa
-                        </dt>
-                        <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
-                          {taskData.title}
-                        </dd>
-                      </div>
-                      <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-                        <dt className="text-sm font-medium leading-6 text-zinc-900">
-                          Descrição
-                        </dt>
-                        <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
-                          {taskData.description || ""}
-                        </dd>
-                      </div>
-                      <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-                        <dt className="text-sm font-medium leading-6 text-zinc-900">
-                          Criado em
-                        </dt>
-                        <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
-                          {dayjs(taskData.created_at).format(
-                            "DD/MM/YYYY HH:mm"
-                          )}
-                        </dd>
-                      </div>
-                      {taskData.end_at && (
-                        <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-                          <dt className="text-sm font-medium leading-6 text-zinc-900">
-                            Finalizado em
-                          </dt>
-                          <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
-                            {dayjs(taskData.end_at).format("DD/MM/YYYY HH:mm")}
-                          </dd>
-                        </div>
-                      )}
-                      <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-                        <dt className="text-sm font-medium leading-6 text-zinc-900">
-                          Por
-                        </dt>
-                        <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
-                          {taskData.user.name}
-                        </dd>
-                      </div>
-                      <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
-                        <dt className="text-sm font-medium leading-6 text-zinc-900">
-                          Anexos
-                        </dt>
-                        <dd className="mt-2 text-sm text-zinc-900 sm:col-span-2 sm:mt-0">
-                          {taskData.files.length >= 1 ? (
-                            <ul className="divide-y divide-zinc-100 rounded-md border border-zinc-200">
-                              {taskData.files.map((x: any, k: number) => (
-                                <li
-                                  key={k}
-                                  className="flex items-center justify-between py-4 pl-4 pr-5 text-sm leading-6"
-                                >
-                                  <div className="flex w-0 flex-1 items-center">
-                                    <Paperclip
-                                      aria-hidden="true"
-                                      className="h-5 w-5 flex-shrink-0 text-zinc-400"
-                                    />
-                                    <div className="ml-4 flex min-w-0 flex-1 gap-2">
-                                      <span className="truncate font-medium">
-                                        {x.filename}
-                                      </span>
-                                      <span className="flex-shrink-0 text-zinc-400">
-                                        {dayjs(x.created_at).format(
-                                          "DD/MM/YYYY HH:mm"
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="ml-4 flex-shrink-0">
-                                    <Link
-                                      href={x.uri}
-                                      target="_blank"
-                                      className="font-medium text-zinc-600 hover:text-zinc-500"
-                                    >
-                                      Visualizar
-                                    </Link>
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="text-zinc-500">
-                              Nenhum arquivo anexado à tarefa.
-                            </span>
-                          )}
-                        </dd>
-                      </div>
-                      {session && session.manager && (
-                        <>
-                          <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                  <>
+                    {!editing ? (
+                      <div className="text-left">
+                        <dl className="divide-y divide-zinc-100">
+                          <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
                             <dt className="text-sm font-medium leading-6 text-zinc-900">
-                              Excluir
+                              Tarefa
                             </dt>
                             <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              {taskData.title}
+                            </dd>
+                          </div>
+                          <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Descrição
+                            </dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              {taskData.description || ""}
+                            </dd>
+                          </div>
+                          <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Criado em
+                            </dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              {dayjs(taskData.created_at).format(
+                                "DD/MM/YYYY HH:mm"
+                              )}
+                            </dd>
+                          </div>
+                          {taskData.end_at && (
+                            <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                              <dt className="text-sm font-medium leading-6 text-zinc-900">
+                                Finalizado em
+                              </dt>
+                              <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                                {dayjs(taskData.end_at).format(
+                                  "DD/MM/YYYY HH:mm"
+                                )}
+                              </dd>
+                            </div>
+                          )}
+                          <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Por
+                            </dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              {taskData.user.name}
+                            </dd>
+                          </div>
+                          {((taskData.members &&
+                            taskData.members.length >= 1) ||
+                            (session && session.manager)) && (
+                            <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                              <dt className="text-sm font-medium leading-6 text-zinc-900">
+                                {taskData.members.length > 1
+                                  ? `Responsáveis`
+                                  : `Responsável`}
+                              </dt>
+                              <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                                <div className="flex space-x-2">
+                                  {taskData.members.map((x: any, k: number) => (
+                                    <Tooltip text={x.name}>
+                                      <AvatarName
+                                        key={k}
+                                        name={x.name}
+                                        isAdmin={x.manager}
+                                      />
+                                    </Tooltip>
+                                  ))}
+                                </div>
+                              </dd>
+                            </div>
+                          )}
+                          <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Anexos
+                            </dt>
+                            <dd className="mt-2 text-sm text-zinc-900 sm:col-span-2 sm:mt-0">
+                              {taskData.files.length >= 1 ? (
+                                <ul className="divide-y divide-zinc-100 rounded-md border border-zinc-200">
+                                  {taskData.files.map((x: any, k: number) => (
+                                    <li
+                                      key={k}
+                                      className="flex items-center justify-between py-4 pl-4 pr-5 text-sm leading-6"
+                                    >
+                                      <div className="flex w-0 flex-1 items-center">
+                                        <Paperclip
+                                          aria-hidden="true"
+                                          className="h-5 w-5 flex-shrink-0 text-zinc-400"
+                                        />
+                                        <div className="ml-4 flex min-w-0 flex-1 gap-2">
+                                          <span className="truncate font-medium">
+                                            {x.filename}
+                                          </span>
+                                          <span className="flex-shrink-0 text-zinc-400">
+                                            {dayjs(x.created_at).format(
+                                              "DD/MM/YYYY HH:mm"
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="ml-4 flex-shrink-0">
+                                        <Link
+                                          href={x.uri}
+                                          target="_blank"
+                                          className="font-medium text-zinc-600 hover:text-zinc-500"
+                                        >
+                                          Visualizar
+                                        </Link>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <span className="text-zinc-500">
+                                  Nenhum arquivo anexado à tarefa.
+                                </span>
+                              )}
+                            </dd>
+                          </div>
+                          {session &&
+                            (session.manager ||
+                              session.id === taskData.user.id) && (
+                              <>
+                                <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                                  <dt className="text-sm font-medium leading-6 text-zinc-900"></dt>
+                                  <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0 flex items-center gap-x-2">
+                                    <button
+                                      onClick={() => setEditing(true)}
+                                      className="flex items-center gap-x-2 text-zinc-800 p-2 px-3 hover:bg-black/10 rounded-md bg-black/5"
+                                    >
+                                      <Edit2Icon size={16} /> Editar
+                                    </button>
+                                  </dd>
+                                </div>
+                              </>
+                            )}
+                        </dl>
+                      </div>
+                    ) : (
+                      <div className="text-left">
+                        <dl className="divide-y divide-zinc-100">
+                          <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Tarefa
+                            </dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              <input
+                                type="text"
+                                disabled={loadings.editing || loadings.editTeam}
+                                value={formEdit.title}
+                                onChange={(e: any) =>
+                                  setFormEdit({
+                                    ...formEdit,
+                                    title: e.target.value
+                                  })
+                                }
+                                placeholder="Título da Tarefa"
+                                className="block w-full rounded-md outline-none px-2 border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-zinc-600 sm:text-sm sm:leading-6 disabled:cursor-not-allowed disabled:opacity-50"
+                              />
+                            </dd>
+                          </div>
+                          <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Descrição
+                            </dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              <input
+                                type="text"
+                                disabled={loadings.editing || loadings.editTeam}
+                                value={formEdit.description}
+                                onChange={(e: any) =>
+                                  setFormEdit({
+                                    ...formEdit,
+                                    description: e.target.value
+                                  })
+                                }
+                                placeholder="Descrição curta sobre a Tarefa"
+                                className="block w-full rounded-md outline-none px-2 border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-zinc-600 sm:text-sm sm:leading-6 disabled:cursor-not-allowed disabled:opacity-50"
+                              />
+                            </dd>
+                          </div>
+                          <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900">
+                              Responsáveis{" "}
+                              {!loadings.editTeam && (
+                                <small>({members.length})</small>
+                              )}
+                            </dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
+                              <div className="flex space-x-2">
+                                {loadings.editTeam ? (
+                                  <>
+                                    {[0, 0, 0, 0, 0].map(
+                                      (x: any, k: number) => (
+                                        <div
+                                          key={k}
+                                          className={`flex-shrink-0 w-6 h-6 bg-zinc-200 animate-pulse rounded-full`}
+                                        />
+                                      )
+                                    )}
+                                  </>
+                                ) : (
+                                  team &&
+                                  team.map((x: any, k: number) => (
+                                    <button
+                                      key={k}
+                                      disabled={loadings.editing}
+                                      type="button"
+                                      onClick={() => handleMember(x.id)}
+                                      className={`flex-shrink-0 rounded-full disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        !members.includes(x.id)
+                                          ? `opacity-25 hover:opacity-70`
+                                          : `opacity-100 hover:opacity-70`
+                                      }`}
+                                      title={x.name}
+                                    >
+                                      <Tooltip text={x.name}>
+                                        <AvatarName
+                                          name={x.name}
+                                          isAdmin={x.manager}
+                                        />
+                                      </Tooltip>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            </dd>
+                          </div>
+                          <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
+                            <dt className="text-sm font-medium leading-6 text-zinc-900"></dt>
+                            <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0 flex items-center gap-x-2">
                               <button
-                                onClick={handleDelete}
-                                className="flex items-center gap-x-2 text-red-500 p-2 px-3 hover:bg-black/10 rounded-md bg-black/5"
+                                disabled={loadings.editing || loadings.editTeam}
+                                onClick={handleUpdateTask}
+                                className="flex items-center gap-x-2 text-emerald-500 p-2 px-3 hover:bg-black/10 rounded-md bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                <Trash2Icon size={16} /> Excluir Tarefa
+                                {loadings.editing ? (
+                                  <Loader2
+                                    size={16}
+                                    className="mx-auto animate-spin"
+                                  />
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={16} /> Salvar
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                disabled={loadings.editing || loadings.editTeam}
+                                onClick={() => setEditing(false)}
+                                className="flex items-center gap-x-2 text-zinc-800 p-2 px-3 hover:bg-black/10 rounded-md bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {loadings.editing ? (
+                                  <Loader2
+                                    size={16}
+                                    className="mx-auto animate-spin"
+                                  />
+                                ) : (
+                                  <>
+                                    <X size={16} /> Cancelar
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                disabled={loadings.editing || loadings.editTeam}
+                                onClick={handleDelete}
+                                className="flex items-center gap-x-2 text-red-500 p-2 px-3 hover:bg-black/10 rounded-md bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {loadings.editing ? (
+                                  <Loader2
+                                    size={16}
+                                    className="mx-auto animate-spin"
+                                  />
+                                ) : (
+                                  <>
+                                    <Trash2Icon size={16} /> Excluir
+                                  </>
+                                )}
                               </button>
                             </dd>
                           </div>
-                        </>
-                      )}
-                    </dl>
-                  </div>
+                        </dl>
+                      </div>
+                    )}
+                  </>
                 ) : tab === "checklist" ? (
                   <>
                     <div className="w-full">
@@ -836,7 +1097,7 @@ export default function ModalTaskDetail({
                             <button
                               disabled={loadings.addChecklist}
                               onClick={handleAddChecklist}
-                              className="bg-protectdata-500 text-black text-sm flex items-center gap-x-1 p-2 px-3 rounded-md disabled:cursor-not-allowed disabled:opacity-50"
+                              className="bg-protectdata-500 text-sm flex items-center gap-x-1 p-2 px-3 rounded-md disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {!loadings.addChecklist ? (
                                 <>
@@ -1043,7 +1304,10 @@ export default function ModalTaskDetail({
                                   >
                                     <div className="w-px bg-zinc-200" />
                                   </div>
-                                  <AvatarName name={activityItem.user.name} />
+                                  <AvatarName
+                                    name={activityItem.user.name}
+                                    isAdmin={activityItem.user.manager}
+                                  />
                                   <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-zinc-200">
                                     <div className="flex justify-between gap-x-4">
                                       <div className="py-0.5 text-xs leading-5 text-zinc-500">
@@ -1120,7 +1384,10 @@ export default function ModalTaskDetail({
                                       >
                                         <div className="w-px bg-zinc-200" />
                                       </div>
-                                      <AvatarName name={_x.user.name} />
+                                      <AvatarName
+                                        name={_x.user.name}
+                                        isAdmin={_x.user.manager}
+                                      />
                                       <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-zinc-200">
                                         <div className="flex justify-between gap-x-4">
                                           <div className="py-0.5 text-xs leading-5 text-zinc-500">
@@ -1162,7 +1429,10 @@ export default function ModalTaskDetail({
                         )}
                       </ul>
                       <div className="mt-6 flex gap-x-3 w-full">
-                        <AvatarName name={session ? session.name : "PD"} />
+                        <AvatarName
+                          name={session ? session.name : "PD"}
+                          isAdmin={session && session.manager}
+                        />
                         <div className="overflow-hidden w-full rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-zinc-300 focus-within:ring-2 focus-within:ring-zinc-600">
                           <textarea
                             rows={2}
@@ -1400,17 +1670,37 @@ export default function ModalTaskDetail({
                             ) : null}
                             <div className="relative flex space-x-3">
                               <div>
-                                <span className="flex bg-protectdata-700 h-8 w-8 items-center justify-center rounded-full ring-8 ring-white">
-                                  <Clock
-                                    aria-hidden="true"
-                                    className="h-5 w-5 text-white"
-                                  />
+                                <span className="flex bg-protectdata-500 text-protectdata-950 h-8 w-8 items-center justify-center rounded-full ring-8 ring-white">
+                                  {event.action.includes("Comentário") ? (
+                                    <MessageCircle
+                                      aria-hidden="true"
+                                      className="h-5 w-5"
+                                    />
+                                  ) : event.action.includes(
+                                      "status foi atualizado"
+                                    ) ? (
+                                    <Milestone
+                                      aria-hidden="true"
+                                      className="h-5 w-5"
+                                    />
+                                  ) : event.action.includes("checklist") ? (
+                                    <ListCheck
+                                      aria-hidden="true"
+                                      className="h-5 w-5"
+                                    />
+                                  ) : (
+                                    <Clock
+                                      aria-hidden="true"
+                                      className="h-5 w-5"
+                                    />
+                                  )}
                                 </span>
                               </div>
                               <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                                 <div>
                                   <p className="text-sm text-zinc-500">
-                                    {event.action}
+                                    {event.action.substring(0, 50)}
+                                    {event.action.length > 50 && `...`}
                                   </p>
                                 </div>
                                 <div className="whitespace-nowrap text-right text-sm text-zinc-500">

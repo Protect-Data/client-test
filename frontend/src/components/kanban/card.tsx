@@ -9,9 +9,10 @@ import {
   MessageCircle,
   Paperclip
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDrag } from "react-dnd";
 import ModalTaskDetail from "../tasks/ModalTask";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Card({
   data,
@@ -20,6 +21,9 @@ export default function Card({
   data: any;
   onUpdate: () => void;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const taskId = searchParams.get("taskId");
   const [modalTask, setModalTask] = useState<any>(null);
   const ref = useRef(null);
 
@@ -31,6 +35,12 @@ export default function Card({
     })
   }));
   drag(ref);
+
+  useEffect(() => {
+    if (data && taskId && data.id === taskId) {
+      setModalTask(data);
+    }
+  }, [data, taskId]);
 
   return (
     <>
@@ -58,7 +68,7 @@ export default function Card({
         <div className="w-full pt-2 text-zinc-500">
           {data.description || "Descrição vazia."}
         </div>
-        <div className="w-full mt-4 flex flex-col md:flex-row gap-y-4 justify-between items-center">
+        <div className="w-full mt-4 flex flex-col xl:flex-row gap-y-4 justify-between items-center">
           <div className="flex items-center gap-x-4 font-medium text-xs text-zinc-600">
             <span className="flex items-center gap-x-1">
               <CheckSquare2 size={12} /> {data.checklist.length} Checklist
@@ -72,14 +82,17 @@ export default function Card({
               {data.files.length !== 1 ? `s` : null}
             </span>
           </div>
-          <span className="flex items-center justify-center gap-x-2 bg-protectdata-500/20 p-2 px-3 text-xs font-medium rounded-md">
+          <span className="flex items-center justify-center gap-x-2 w-full xl:w-auto bg-protectdata-500/20 p-2 px-3 text-xs font-medium rounded-md">
             <Clock size={12} /> {dayjs(data.created_at).format("DD/MM HH:mm")}
           </span>
         </div>
       </div>
       <ModalTaskDetail
         open={modalTask ? true : false}
-        setOpen={() => setModalTask(false)}
+        setOpen={() => {
+          setModalTask(false);
+          router.replace("/dashboard/tasks");
+        }}
         data={modalTask}
         handleUpdate={onUpdate}
       />

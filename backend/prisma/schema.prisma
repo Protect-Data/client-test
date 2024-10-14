@@ -16,18 +16,32 @@ model User {
   updated_at DateTime @updatedAt
   manager    Boolean  @default(false)
 
-  tasks     Task[]
-  checklist CheckList[]
-  comments  Comment[]
-  commentCl CommentCL[]
-  files     File[]
-  logs      Log[]
+  tasks         Task[]
+  checklist     CheckList[]
+  comments      Comment[]
+  commentCl     CommentCL[]
+  files         File[]
+  logs          Log[]
+  assignedTasks Task[]      @relation("TaskMembers")
 
   @@map("users")
 }
 
+model RedefinePass {
+  id         String   @id @default(uuid())
+  redefined  Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  expires_at DateTime
+  email      String
+  code       String
+
+  @@map("redefinePass")
+}
+
 model Task {
   id          String    @id @unique @default(uuid())
+  trash       Boolean   @default(false)
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
   end_at      DateTime?
@@ -39,6 +53,7 @@ model Task {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
+  members   User[]      @relation("TaskMembers")
   checklist CheckList[]
   comments  Comment[]
   files     File[]

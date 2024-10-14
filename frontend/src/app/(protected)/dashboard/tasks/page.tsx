@@ -17,7 +17,7 @@ export default function TasksPage() {
   }, [tasks]);
 
   const getTasksList = async () => {
-    setLoading(true);
+    // setLoading(true);
     try {
       const { data: _tasks } = await axios.get("/api/v1/tasks");
       setTasks(_tasks);

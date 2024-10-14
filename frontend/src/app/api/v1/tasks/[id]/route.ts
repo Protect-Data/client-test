@@ -26,3 +26,20 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: error.message, success: false });
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const data = await req.json();
+    // trata o url pra pegar o taskid
+    const urlSplit = req.nextUrl.pathname.split("/");
+    const taskId = urlSplit[4];
+    const query: any = await httpClient.put(`/tasks/${taskId}`, {
+      ...data
+    });
+    return NextResponse.json({ ...query });
+  } catch (err) {
+    console.log("[error]", err);
+    const error: any = err;
+    return NextResponse.json({ error: error.message, success: false });
+  }
+}

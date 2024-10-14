@@ -58,7 +58,7 @@ const KanbanBoard = ({
 
   return (
     <>
-      <div className="w-full min-h-screen h-full grid grid-cols-1 md:grid-cols-3 gap-x-4">
+      <div className="w-full min-h-[84vh] h-full grid grid-cols-1 xl:grid-cols-3 gap-x-4">
         {data &&
           data.map((x: any, k: number) => (
             <Column

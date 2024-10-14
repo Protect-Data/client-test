@@ -4,49 +4,60 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
 
 type ForgotSchema = {
   email: string;
+  password: string;
+  code: string;
 };
 
 const forgotFormSchema = z.object({
-  email: z.string().email("Informe um e-mail válido").toLowerCase()
+  email: z.string().email("Informe um e-mail válido"),
+  password: z.string().min(6, "Mínimo de 6 caracteres"),
+  code: z.string().min(4, "Informe um código válido")
 });
 
-export default function ForgotPassPage() {
+export default function RedefinePassPage() {
   const {
     register,
     handleSubmit,
-    control,
+    setValue,
     formState: { errors }
   } = useForm<ForgotSchema>({
     resolver: zodResolver(forgotFormSchema)
   });
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+
+  const paramsEmail = searchParams.get("email");
+
+  useEffect(() => {
+    if (paramsEmail) {
+      setValue("email", paramsEmail);
+    }
+  }, [paramsEmail]);
 
   const handleForgot = async (data: any) => {
     setLoading(true);
     try {
       const { data: apiRequest } = await axios.post(
-        "/api/v1/auth/forgot-pass",
-        { ...data }
+        "/api/v1/auth/redefine-pass",
+        data
       );
       if (!apiRequest.success) {
         setLoading(false);
         toast.error(apiRequest.error);
         return false;
       }
-      toast.success(
-        "Verifique o código enviado no seu email para redefinir a senha..."
-      );
+      toast.success("Senha redefinida com sucesso!");
       console.log("apiRequest", apiRequest);
-      router.push(`/auth/redefine-password?email=${data.email}`);
+      router.push(`/auth/login`);
     } catch (err: any) {
       setLoading(false);
       toast.error(`${err.error}`);
@@ -80,9 +91,43 @@ export default function ForgotPassPage() {
               <div className="mt-2">
                 <input
                   {...register("email")}
+                  disabled={paramsEmail ? true : false}
                   type="email"
                   required
                   autoComplete="email"
+                  className="block w-full disabled:cursor-not-allowed disabled:opacity-50 outline-none px-3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-protectdata-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Nova Senha
+              </label>
+              <div className="mt-2">
+                <input
+                  {...register("password")}
+                  type="password"
+                  required
+                  className="block w-full outline-none px-3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-protectdata-500 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Código de Segurança
+              </label>
+              <div className="mt-2">
+                <input
+                  {...register("code")}
+                  placeholder="0000"
+                  type="text"
+                  required
                   className="block w-full outline-none px-3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-protectdata-500 sm:text-sm sm:leading-6"
                 />
               </div>
@@ -97,18 +142,9 @@ export default function ForgotPassPage() {
                 {loading ? (
                   <Loader2 size={16} className="mx-auto animate-spin" />
                 ) : (
-                  `Solicitar Redefinição`
+                  `Redefinir Senha`
                 )}
               </button>
-            </div>
-            <div>
-              <Link
-                href="/auth/login"
-                className="flex items-center gap-x-1 hover:opacity-85"
-              >
-                <ChevronLeft size={16} />
-                Voltar ao Login
-              </Link>
             </div>
           </form>
         </div>

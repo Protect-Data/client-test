@@ -202,10 +202,12 @@ export default function ModalCrudUser({
                         htmlFor="password"
                         className="block text-sm font-medium leading-6 text-gray-900"
                       >
-                        Atualizar Senha
-                        <small className="block -mt-2 font-medium opacity-80">
-                          (só preencha se for atualizar)
-                        </small>
+                        Senha
+                        {edit && (
+                          <small className="block -mt-2 font-medium opacity-80">
+                            (só preencha se for atualizar)
+                          </small>
+                        )}
                       </label>
                       <div className="mt-2">
                         <input

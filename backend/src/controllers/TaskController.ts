@@ -2,14 +2,67 @@ import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 import { createLog } from "../services/logs.service";
 
-export const getAllTask = async (req: Request, res: Response) => {
+export const getAllTask = async (req: any, res: Response) => {
   try {
+    const { id: userId } = req.user;
+    // check manager
+    const checkManager = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        manager: true
+      }
+    });
+    // where condition
+    const _where =
+      checkManager && checkManager.manager
+        ? {
+            trash: false
+          }
+        : {
+            trash: false,
+            OR: [
+              {
+                AND: [
+                  { privacy: "public" },
+                  {
+                    members: {
+                      none: {}
+                    }
+                  }
+                ]
+              },
+              {
+                AND: [
+                  { privacy: "public" },
+                  { members: { some: { id: userId } } }
+                ]
+              },
+              {
+                AND: [
+                  { privacy: "private" },
+                  { members: { some: { id: userId } } }
+                ]
+              }
+            ]
+          };
+    // find tasks
     const tasks = await prisma.task.findMany({
+      where: _where,
       select: {
         id: true,
         title: true,
         status: true,
         privacy: true,
+        members: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            manager: true
+          }
+        },
         user: {
           select: {
             name: true
@@ -33,7 +86,8 @@ export const getAllTask = async (req: Request, res: Response) => {
             user: {
               select: {
                 name: true,
-                id: true
+                id: true,
+                manager: true
               }
             }
           }
@@ -55,6 +109,7 @@ export const getAllTask = async (req: Request, res: Response) => {
     if (!tasks) {
       return res.status(204);
     }
+
     return res.status(200).json(tasks);
   } catch (error) {
     return res.status(400).json(error);
@@ -66,13 +121,22 @@ export const getTask = async (req: Request, res: Response) => {
     const { id } = req.params;
     const findTask = await prisma.task.findUnique({
       where: {
-        id
+        id,
+        trash: false
       },
       select: {
         id: true,
         title: true,
         status: true,
         privacy: true,
+        members: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            manager: true
+          }
+        },
         user: {
           select: {
             name: true
@@ -96,7 +160,8 @@ export const getTask = async (req: Request, res: Response) => {
             user: {
               select: {
                 name: true,
-                id: true
+                id: true,
+                manager: true
               }
             }
           }
@@ -123,10 +188,31 @@ export const getTask = async (req: Request, res: Response) => {
   }
 };
 
+export const getTeam = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const findTeam = await prisma.user.findMany({
+      where: {
+        NOT: {
+          id: userId
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        manager: true
+      }
+    });
+    return res.status(200).json(findTeam);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+};
+
 export const createTask = async (req: any, res: Response) => {
   try {
     const { id: userId } = req.user;
-    const { title, description, status, privacy } = req.body;
+    const { title, description, status, privacy, members } = req.body;
 
     const task = await prisma.task.create({
       data: {
@@ -134,7 +220,10 @@ export const createTask = async (req: any, res: Response) => {
         description,
         status,
         privacy,
-        user: { connect: { id: userId } }
+        user: { connect: { id: userId } },
+        members: {
+          connect: members.map((memberId: string) => ({ id: memberId }))
+        }
       },
       select: {
         id: true,
@@ -159,7 +248,7 @@ export const createTask = async (req: any, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title } = req.body;
+    const { title, description, members } = req.body;
 
     const findTask = await prisma.task.findUnique({
       where: {
@@ -176,7 +265,14 @@ export const updateTask = async (req: Request, res: Response) => {
         id
       },
       data: {
-        title
+        title,
+        description,
+        members:
+          members.length >= 1
+            ? {
+                connect: members.map((memberId: string) => ({ id: memberId }))
+              }
+            : { set: [] }
       },
       select: {
         id: true,
@@ -222,7 +318,9 @@ export const updateTaskStatus = async (req: any, res: Response) => {
 
     if (task.id) {
       await createLog(
-        `O status foi atualizado para: ${status}`,
+        `O status foi atualizado para: ${status === 0
+          ? `A Fazer`
+          : status === 1 ? `Em Progresso` : `Finalizado`}`,
         userId,
         task.id
       );
@@ -235,8 +333,9 @@ export const updateTaskStatus = async (req: any, res: Response) => {
   }
 };
 
-export const deleteTask = async (req: Request, res: Response) => {
+export const deleteTask = async (req: any, res: Response) => {
   try {
+    const { id: userId } = req.user;
     const { id } = req.params;
 
     const findTask = await prisma.task.findUnique({
@@ -249,11 +348,18 @@ export const deleteTask = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Tarefa não encontrada" });
     }
 
-    const task = await prisma.task.delete({
+    const task = await prisma.task.update({
       where: {
         id
+      },
+      data: {
+        trash: true
       }
     });
+
+    if (task) {
+      await createLog(`A tarefa foi excluída`, userId, id);
+    }
 
     return res.status(201).json(task);
   } catch (error) {

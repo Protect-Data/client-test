@@ -12,5 +12,4 @@ RUN npx prisma migrate status
 RUN npx prisma db seed
 
 # CMD [ "npm", "run", "start" ]
-# "--max-old-space-size=2048", "node_modules/.bin/ts-node"
 CMD [ "node", "--max-old-space-size=2048", "node_modules/.bin/ts-node", "src/server.ts" ]

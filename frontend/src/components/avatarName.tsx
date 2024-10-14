@@ -1,4 +1,10 @@
-export default function AvatarName({ name }: { name: string }) {
+export default function AvatarName({
+  name,
+  isAdmin
+}: {
+  name: string;
+  isAdmin?: boolean;
+}) {
   var names = name.split(" "),
     initials = names[0].substring(0, 1).toUpperCase();
   if (names.length > 1) {
@@ -6,7 +12,12 @@ export default function AvatarName({ name }: { name: string }) {
   }
   return (
     <>
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-protectdata-500 z-20">
+      <span
+        title={name}
+        className={`inline-flex select-none h-6 w-6 items-center justify-center rounded-full ${
+          isAdmin ? `bg-protectdata-500` : `bg-zinc-700 text-white`
+        } z-20`}
+      >
         <span className="text-xs font-medium uppercase leading-none">
           {initials}
         </span>

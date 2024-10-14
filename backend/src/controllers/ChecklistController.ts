@@ -37,8 +37,8 @@ export const finalizeChecklist = async (req: any, res: Response) => {
     const { id } = req.params;
     const findTask = await prisma.checkList.findUnique({
       where: {
-        id,
-        userId: userId
+        id
+        //userId: userId
       },
       select: {
         taskId: true,
@@ -52,8 +52,7 @@ export const finalizeChecklist = async (req: any, res: Response) => {
     if (ACTUAL_STATUS === 0) {
       await prisma.checkList.update({
         where: {
-          id,
-          userId: userId
+          id
         },
         data: {
           status: 1
@@ -67,8 +66,7 @@ export const finalizeChecklist = async (req: any, res: Response) => {
     } else {
       await prisma.checkList.update({
         where: {
-          id,
-          userId: userId
+          id
         },
         data: {
           status: 0

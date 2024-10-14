@@ -3,7 +3,7 @@
 import { useDrop } from "react-dnd";
 import Card from "./card";
 import { useRef, useState } from "react";
-import { PlusIcon } from "lucide-react";
+import { AlertTriangle, ClipboardList, PlusIcon } from "lucide-react";
 import { useSession } from "next-auth/react";
 import DrawerAddTask from "../tasks/DrawerAddTask";
 
@@ -53,10 +53,24 @@ const Column = ({
           {status}
         </h2>
         <ul className="mt-8 w-full space-y-4">
-          {cards &&
+          {!cards || cards.length <= 0 ? (
+            <>
+              <div className="text-center w-full py-8 md:py-24 lg:py-32">
+                <ClipboardList className="mx-auto h-12 w-12 text-zinc-400" />
+                <h3 className="mt-2 text-sm font-semibold text-zinc-900">
+                  Sem registros
+                </h3>
+                <p className="mt-1 text-sm text-zinc-500">
+                  {`Lista ${status} Vazia.`}
+                </p>
+              </div>
+            </>
+          ) : (
+            cards &&
             cards.map((card: any) => (
               <Card key={card.id} data={card} onUpdate={onUpdate} />
-            ))}
+            ))
+          )}
         </ul>
         {session && session.manager && (
           <button
