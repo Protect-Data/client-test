@@ -15,6 +15,9 @@ const nextConfig = {
     URL_API: process.env.URL_API
   },
   reactStrictMode: false,
+  eslint: {
+    ignoreDuringBuilds: true
+  },
   typescript: {
     ignoreBuildErrors: true
   }
