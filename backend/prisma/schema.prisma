@@ -16,13 +16,15 @@ model User {
   updated_at DateTime @updatedAt
   manager    Boolean  @default(false)
 
-  tasks         Task[]
-  checklist     CheckList[]
-  comments      Comment[]
-  commentCl     CommentCL[]
-  files         File[]
-  logs          Log[]
-  assignedTasks Task[]      @relation("TaskMembers")
+  tasks             Task[]
+  checklist         CheckList[]
+  comments          Comment[]
+  commentCl         CommentCL[]
+  files             File[]
+  logs              Log[]
+  assignedTasks     Task[]          @relation("TaskMembers")
+  assignedChecklist CheckList[]     @relation("ChecklistMembers")
+  clientAnswers     ClientAnswers[]
 
   @@map("users")
 }
@@ -95,6 +97,7 @@ model CheckList {
   taskId String?
   task   Task?   @relation(fields: [taskId], references: [id])
 
+  members    User[]      @relation("ChecklistMembers")
   commentscl CommentCL[]
 
   @@map("checklist")
@@ -141,8 +144,55 @@ model Diagnostic {
   id         String   @id @unique @default(uuid())
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  title      String
+
+  questions      Questions[]
+  client_answers ClientAnswers[]
 
   @@map("diagnostics")
+}
+
+model Questions {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  title      String
+  descr      String?
+
+  diagnosticId String
+  diagnostic   Diagnostic @relation(fields: [diagnosticId], references: [id])
+
+  answers Answers[]
+
+  @@map("questions")
+}
+
+model Answers {
+  id    String @id @unique @default(uuid())
+  title String
+  score Int    @default(0)
+
+  questionId String
+  question   Questions @relation(fields: [questionId], references: [id])
+
+  @@map("answers")
+}
+
+model ClientAnswers {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  score      Int      @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  diagnosticId String
+  diagnostic   Diagnostic @relation(fields: [diagnosticId], references: [id])
+
+  response Json
+
+  @@map("client_answers")
 }
 
 model Log {

@@ -74,6 +74,22 @@ export const getAllTask = async (req: any, res: Response) => {
         end_at: true,
         checklist: {
           include: {
+            commentscl: {
+              select: {
+                id: true,
+                created_at: true,
+                comment: true,
+                user: {
+                  select: { id: true, name: true, manager: true }
+                }
+              }
+            },
+            members: {
+              select: {
+                name: true,
+                manager: true
+              }
+            },
             user: {
               select: {
                 name: true
@@ -148,6 +164,22 @@ export const getTask = async (req: Request, res: Response) => {
         end_at: true,
         checklist: {
           include: {
+            commentscl: {
+              select: {
+                id: true,
+                created_at: true,
+                comment: true,
+                user: {
+                  select: { id: true, name: true, manager: true }
+                }
+              }
+            },
+            members: {
+              select: {
+                name: true,
+                manager: true
+              }
+            },
             user: {
               select: {
                 name: true
@@ -245,9 +277,10 @@ export const createTask = async (req: any, res: Response) => {
   }
 };
 
-export const updateTask = async (req: Request, res: Response) => {
+export const updateTask = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
+    const { id: userId } = req.user;
     const { title, description, members } = req.body;
 
     const findTask = await prisma.task.findUnique({
@@ -279,6 +312,14 @@ export const updateTask = async (req: Request, res: Response) => {
         title: true
       }
     });
+
+    if (task.id) {
+      await createLog(
+        `Os detalhes da tarefa foram atualizados`,
+        userId,
+        task.id
+      );
+    }
 
     return res.status(201).json(task);
   } catch (error) {

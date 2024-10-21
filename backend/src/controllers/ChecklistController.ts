@@ -6,17 +6,21 @@ export const createItem = async (req: any, res: Response) => {
   try {
     const { id: userId } = req.user;
     const { taskId } = req.params;
-    const { title } = req.body;
+    const { title, members } = req.body;
 
     const _comment = await prisma.checkList.create({
       data: {
         title,
         task: { connect: { id: taskId } },
-        user: { connect: { id: userId } }
+        user: { connect: { id: userId } },
+        members: {
+          connect: members.map((memberId: string) => ({ id: memberId }))
+        }
       },
       select: {
         id: true,
-        title: true
+        title: true,
+        members: true
       }
     });
 
@@ -106,6 +110,63 @@ export const deleteChecklist = async (req: any, res: Response) => {
       }
     });
     return res.status(201).json(task);
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json(error);
+  }
+};
+
+export const commentChecklist = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const { id } = req.params;
+    const { comment } = req.body;
+    const findTask = await prisma.checkList.findUnique({
+      where: {
+        id
+      },
+      select: {
+        title: true,
+        taskId: true,
+        status: true
+      }
+    });
+    if (!findTask) {
+      return res.status(400).json({ message: "Checklist não encontrada" });
+    }
+
+    await prisma.commentCL.create({
+      data: {
+        comment,
+        checklist: { connect: { id: id } },
+        user: { connect: { id: userId } }
+      }
+    });
+    await createLog(
+      `Comentário enviado no checklist: ${findTask.title}`,
+      userId,
+      findTask.taskId
+    );
+
+    return res.status(201).json({});
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json(error);
+  }
+};
+
+export const deleteCommentChecklist = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const { id } = req.params;
+
+    await prisma.commentCL.delete({
+      where: {
+        id
+      }
+    });
+
+    return res.status(201).json({});
   } catch (error) {
     console.error(error);
     return res.status(400).json(error);

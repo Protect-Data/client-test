@@ -3,6 +3,71 @@ import { createLog } from "../services/logs.service";
 import { Request, Response } from "express";
 import { handlerDelete, handlerUpload } from "../services/upload.service";
 
+export const AllTasks = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+
+    // user manager
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        id: true,
+        name: true,
+        manager: true
+      }
+    });
+
+    // query manager or not
+    const query: any =
+      user && user.manager
+        ? {
+            select: {
+              id: true,
+              mimetype: true,
+              filename: true,
+              created_at: true,
+              uri: true,
+              task: {
+                select: {
+                  id: true,
+                  title: true
+                }
+              }
+            }
+          }
+        : {
+            where: {
+              task: {
+                OR: [{ userId: userId }, { members: { some: { id: userId } } }]
+              }
+            },
+            select: {
+              id: true,
+              mimetype: true,
+              filename: true,
+              created_at: true,
+              uri: true,
+              task: {
+                select: {
+                  id: true,
+                  title: true
+                }
+              }
+            }
+          };
+
+    // list files
+    const files = await prisma.file.findMany(query);
+
+    return res.status(201).json(files);
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ message: "Falha ao listar os arquivos" });
+  }
+};
+
 export const uploadFile = async (req: any, res: Response) => {
   try {
     const { id: userId } = req.user;

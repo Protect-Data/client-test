@@ -12,15 +12,18 @@ import {
   TransitionChild
 } from "@headlessui/react";
 import {
+  Activity,
   Bell,
+  BookmarkCheck,
   ChartBar,
   ChevronDown,
-  Cog,
   HomeIcon,
   ListIcon,
   MenuIcon,
+  PaperclipIcon,
   Plug,
   Search,
+  Stethoscope,
   UsersIcon,
   X
 } from "lucide-react";
@@ -47,10 +50,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     session && session.manager
       ? [
           {
-            name: "Dashboard",
-            href: "/dashboard",
-            icon: HomeIcon,
-            current: pathname === "/dashboard"
+            name: "Tarefas",
+            href: "/dashboard/tasks",
+            icon: BookmarkCheck,
+            current: pathname.includes("/dashboard/tasks")
           },
           {
             name: "Usuários",
@@ -59,10 +62,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             current: pathname.includes("/dashboard/users")
           },
           {
-            name: "Tarefas",
-            href: "/dashboard/tasks",
-            icon: ListIcon,
-            current: pathname.includes("/dashboard/tasks")
+            name: "Diagnósticos",
+            href: "/dashboard/diagnostics",
+            icon: Activity,
+            current: pathname.includes("/dashboard/diagnostics")
+          },
+          {
+            name: "Documentos",
+            href: "/dashboard/documents",
+            icon: PaperclipIcon,
+            current: pathname.includes("/dashboard/documents")
           },
           {
             name: "Relatórios",
@@ -73,16 +82,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         ]
       : [
           {
-            name: "Dashboard",
-            href: "/dashboard",
-            icon: HomeIcon,
-            current: pathname === "/dashboard"
-          },
-          {
             name: "Tarefas",
             href: "/dashboard/tasks",
-            icon: ListIcon,
+            icon: BookmarkCheck,
             current: pathname.includes("/dashboard/tasks")
+          },
+          {
+            name: "Diagnósticos",
+            href: "/dashboard/diagnostics",
+            icon: Activity,
+            current: pathname.includes("/dashboard/diagnostics")
+          },
+          {
+            name: "Documentos",
+            href: "/dashboard/documents",
+            icon: PaperclipIcon,
+            current: pathname.includes("/dashboard/documents")
           },
           {
             name: "Relatórios",

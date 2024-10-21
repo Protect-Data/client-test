@@ -299,6 +299,7 @@ export default function ModalTaskDetail({
   handleUpdate: () => void;
 }) {
   const { data: session }: any = useSession();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<string>("details");
   const [checklistDetail, setChecklistDetail] = useState<any>(null);
@@ -314,6 +315,7 @@ export default function ModalTaskDetail({
   const [editing, setEditing] = useState<boolean>(false);
   const [team, setTeam] = useState<any>(null);
   const [members, setMembers] = useState<any>([]);
+  const [membersCL, setMembersCL] = useState<any>([]);
   const [formEdit, setFormEdit] = useState<any>({
     title: "",
     description: ""
@@ -321,6 +323,8 @@ export default function ModalTaskDetail({
 
   const [loadings, setLoadings] = useState<any>({
     addChecklist: false,
+    addCommentCL: false,
+    deleteCommentCL: false,
     finalizeChecklist: false,
     deleteChecklist: false,
     addComment: false,
@@ -348,7 +352,9 @@ export default function ModalTaskDetail({
 
   useEffect(() => {
     if (editing && !team) getTeam();
-  }, [editing, team]);
+    if (tab === "checklist" && !team) getTeam();
+    if (tab === "comments" || tab === "checklist") setComment("");
+  }, [tab, editing, team]);
 
   if (!data || !taskData) {
     return <></>;
@@ -408,6 +414,18 @@ export default function ModalTaskDetail({
     setMembers(back_members);
   };
 
+  const handleMemberCL = (memId: string) => {
+    let back_members = [...membersCL];
+    if (!back_members.includes(memId)) {
+      back_members.push(memId);
+    } else {
+      // remove form arr
+      const key = back_members.indexOf(memId);
+      back_members.splice(key, 1);
+    }
+    setMembersCL(back_members);
+  };
+
   const updateTaskData = async () => {
     try {
       const { data: updateTask }: any = await axios.get(
@@ -423,7 +441,7 @@ export default function ModalTaskDetail({
 
   const handleAddChecklist = async () => {
     if (ckItem === "") {
-      toast.error("Comentários vazios não permitidos.");
+      toast.error("Tarefas em branco não permitida...");
       return false;
     }
     setLoadings({ ...loadings, addChecklist: true });
@@ -431,12 +449,14 @@ export default function ModalTaskDetail({
       const added: any = await axios.post(
         `/api/v1/checklist?taskId=${data.id}`,
         {
-          title: ckItem
+          title: ckItem,
+          members: membersCL
         }
       );
       await updateTaskData();
       toast.success("Checklist atualizada com sucesso");
       setCkItem("");
+      // setChecklistDetail(added);
     } catch (error) {
       console.error("handleAddChecklist"), error;
       toast.error(`Falha ao adicionar o item.`);
@@ -472,6 +492,34 @@ export default function ModalTaskDetail({
       toast.error(`Falha ao enviar comentário.`);
     } finally {
       setLoadings({ ...loadings, addComment: false });
+    }
+  };
+
+  const handleCommentCL = async (checklistId: string) => {
+    if (comment === "" || comment.length <= 1) {
+      toast.error("Comentários vazios não permitidos.");
+      return false;
+    }
+    setLoadings({ ...loadings, addCommentCL: true });
+    try {
+      const { data: added }: any = await axios.post(
+        `/api/v1/checklist/comment?checklistId=${checklistId}`,
+        {
+          comment
+        }
+      );
+      if (added.error) {
+        toast.error(added.error);
+        return false;
+      }
+      await updateTaskData();
+      toast.success("Comentário publicado com sucesso");
+      setComment("");
+    } catch (error) {
+      console.error("handleComment"), error;
+      toast.error(`Falha ao enviar comentário.`);
+    } finally {
+      setLoadings({ ...loadings, addCommentCL: false });
     }
   };
 
@@ -549,6 +597,33 @@ export default function ModalTaskDetail({
     } catch (error) {
       console.error("getTasksList"), error;
       toast.error(`Falha ao excluir o comentário.`);
+    }
+  };
+
+  const handleDeleteCommentCL = async (commentId: string) => {
+    setLoadings({ ...loadings, deleteCommentCL: commentId });
+    try {
+      const { data: query }: any = await axios.delete(
+        `/api/v1/checklist/comment?commentId=${commentId}`
+      );
+      if (query.error) {
+        toast.error(query.error);
+        return false;
+      }
+      await updateTaskData();
+      toast.success("Comentário excluído com sucesso");
+      // update task data
+      /*const newCLDetail = taskData.checklist.filter(
+        (x: any) => x.id === commentId
+      );
+      if (newCLDetail) {
+        setChecklistDetail({ ...newCLDetail[0] });
+      }*/
+    } catch (error) {
+      console.error("handleDeleteCommentCL"), error;
+      toast.error(`Falha ao excluir o comentário.`);
+    } finally {
+      setLoadings({ ...loadings, deleteCommentCL: false });
     }
   };
 
@@ -871,7 +946,8 @@ export default function ModalTaskDetail({
                           </div>
                           {session &&
                             (session.manager ||
-                              session.id === taskData.user.id) && (
+                              session.id === taskData.user.id ||
+                              members.includes(session.id)) && (
                               <>
                                 <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
                                   <dt className="text-sm font-medium leading-6 text-zinc-900"></dt>
@@ -952,28 +1028,39 @@ export default function ModalTaskDetail({
                                     )}
                                   </>
                                 ) : (
-                                  team &&
-                                  team.map((x: any, k: number) => (
-                                    <button
-                                      key={k}
-                                      disabled={loadings.editing}
-                                      type="button"
-                                      onClick={() => handleMember(x.id)}
-                                      className={`flex-shrink-0 rounded-full disabled:cursor-not-allowed disabled:opacity-50 ${
-                                        !members.includes(x.id)
-                                          ? `opacity-25 hover:opacity-70`
-                                          : `opacity-100 hover:opacity-70`
-                                      }`}
-                                      title={x.name}
-                                    >
-                                      <Tooltip text={x.name}>
+                                  <>
+                                    {session && (
+                                      <Tooltip text={`Eu`}>
                                         <AvatarName
-                                          name={x.name}
-                                          isAdmin={x.manager}
+                                          name={session.name}
+                                          isAdmin={session.manager}
+                                          disabled
                                         />
                                       </Tooltip>
-                                    </button>
-                                  ))
+                                    )}
+                                    {team &&
+                                      team.map((x: any, k: number) => (
+                                        <button
+                                          key={k}
+                                          disabled={loadings.editing}
+                                          type="button"
+                                          onClick={() => handleMember(x.id)}
+                                          className={`flex-shrink-0 rounded-full disabled:cursor-not-allowed disabled:opacity-50 ${
+                                            !members.includes(x.id)
+                                              ? `opacity-25 hover:opacity-70`
+                                              : `opacity-100 hover:opacity-70`
+                                          }`}
+                                          title={x.name}
+                                        >
+                                          <Tooltip text={x.name}>
+                                            <AvatarName
+                                              name={x.name}
+                                              isAdmin={x.manager}
+                                            />
+                                          </Tooltip>
+                                        </button>
+                                      ))}
+                                  </>
                                 )}
                               </div>
                             </dd>
@@ -1077,12 +1164,28 @@ export default function ModalTaskDetail({
                                     {a.title}
                                   </div>
                                 </div>
-                                <button onClick={() => setChecklistDetail(a)}>
-                                  <ChevronRight
-                                    className="text-zinc-600"
-                                    size={16}
-                                  />
-                                </button>
+                                <div className="flex items-center gap-x-4">
+                                  <div className="w-full flex -space-x-1 scale-75">
+                                    {a.members.map((x: any, k: number) => (
+                                      <Tooltip key={k} text={x.name}>
+                                        <AvatarName
+                                          name={x.name}
+                                          isAdmin={x.manager}
+                                        />
+                                      </Tooltip>
+                                    ))}
+                                  </div>
+                                  <div className="flex items-center justify-start gap-x-1 text-sm text-zinc-500">
+                                    <MessageCircle size={12} />{" "}
+                                    {a.commentscl.length}
+                                  </div>
+                                  <button onClick={() => setChecklistDetail(a)}>
+                                    <ChevronRight
+                                      className="text-zinc-600"
+                                      size={16}
+                                    />
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -1094,8 +1197,37 @@ export default function ModalTaskDetail({
                               className="w-full outline-none py-1.5 px-2 text-sm rounded-md border border-zinc-300 focus:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
                               placeholder="Adicionar nova tarefa"
                             />
+                            <div className="w-auto flex -space-x-1 px-4 pr-6">
+                              {team &&
+                                team.map(
+                                  (x: any, k: number) =>
+                                    members.includes(x.id) && (
+                                      <button
+                                        key={k}
+                                        type="button"
+                                        onClick={() => handleMemberCL(x.id)}
+                                        className={
+                                          !membersCL.includes(x.id)
+                                            ? `flex-shrink-0 opacity-25 hover:opacity-75`
+                                            : `flex-shrink-0`
+                                        }
+                                      >
+                                        <Tooltip text={x.name}>
+                                          <AvatarName
+                                            name={x.name}
+                                            isAdmin={x.manager}
+                                          />
+                                        </Tooltip>
+                                      </button>
+                                    )
+                                )}
+                            </div>
                             <button
-                              disabled={loadings.addChecklist}
+                              disabled={
+                                ckItem === "" ||
+                                loadings.addChecklist ||
+                                membersCL.length <= 0
+                              }
                               onClick={handleAddChecklist}
                               className="bg-protectdata-500 text-sm flex items-center gap-x-1 p-2 px-3 rounded-md disabled:cursor-not-allowed disabled:opacity-50"
                             >
@@ -1134,6 +1266,18 @@ export default function ModalTaskDetail({
                                 {checklistDetail.title}
                               </div>
                               <div className="flex items-center gap-x-2">
+                                <div className="w-full flex -space-x-1 px-2">
+                                  {checklistDetail.members.map(
+                                    (x: any, k: number) => (
+                                      <Tooltip key={k} text={x.name}>
+                                        <AvatarName
+                                          name={x.name}
+                                          isAdmin={x.manager}
+                                        />
+                                      </Tooltip>
+                                    )
+                                  )}
+                                </div>
                                 {checklistDetail.status === 0 ? (
                                   <button
                                     onClick={() =>
@@ -1224,49 +1368,123 @@ export default function ModalTaskDetail({
                                   ).format("DD/MM/YYYY HH:mm")}`}
                             </span>
                           </div>
-                          <ul className="space-y-6">
-                            {[].map((activityItem: any, activityItemIdx) => (
-                              <li
-                                key={activityItem.id}
-                                className="relative flex gap-x-4"
-                              >
-                                <div
-                                  className={classNames(
-                                    activityItemIdx === activity.length - 1
-                                      ? "h-6"
-                                      : "-bottom-6",
-                                    "absolute left-0 top-0 flex w-6 justify-center"
-                                  )}
+                          <ul className="space-y-6 mt-4">
+                            {checklistDetail.commentscl.map(
+                              (activityItem: any, activityItemIdx: number) => (
+                                <li
+                                  key={activityItemIdx}
+                                  className="relative flex gap-x-4"
                                 >
-                                  <div className="w-px bg-zinc-200" />
-                                </div>
-                                <img
-                                  alt=""
-                                  src={activityItem.person}
-                                  className="relative mt-3 h-6 w-6 flex-none rounded-full bg-zinc-50"
-                                />
-                                <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-zinc-200">
-                                  <div className="flex justify-between gap-x-4">
-                                    <div className="py-0.5 text-xs leading-5 text-zinc-500">
-                                      <span className="font-medium text-zinc-900">
-                                        {activityItem.person}
-                                      </span>{" "}
-                                      comentou
-                                    </div>
-                                    <time
-                                      dateTime={activityItem.dateTime}
-                                      className="flex-none py-0.5 text-xs leading-5 text-zinc-500"
-                                    >
-                                      {activityItem.date}
-                                    </time>
+                                  <div
+                                    className={classNames(
+                                      activityItemIdx === activity.length - 1
+                                        ? "h-6"
+                                        : "-bottom-6",
+                                      "absolute left-0 top-0 flex w-6 justify-center"
+                                    )}
+                                  >
+                                    <div className="w-px bg-zinc-200" />
                                   </div>
-                                  <p className="text-sm leading-6 text-zinc-500">
-                                    {activityItem.comment}
-                                  </p>
-                                </div>
-                              </li>
-                            ))}
+                                  <AvatarName
+                                    name={activityItem.user.name}
+                                    isAdmin={activityItem.user.manager}
+                                  />
+                                  <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-zinc-200">
+                                    <div className="flex justify-between gap-x-4">
+                                      <div className="py-0.5 text-xs leading-5 text-zinc-500">
+                                        <span className="font-medium text-zinc-900">
+                                          {activityItem.user.name}
+                                        </span>{" "}
+                                        comentou
+                                      </div>
+                                      <div className="flex items-center gap-x-2">
+                                        <time
+                                          dateTime={activityItem.dateTime}
+                                          className="flex-none py-0.5 text-xs leading-5 text-zinc-500"
+                                        >
+                                          {dayjs(
+                                            activityItem.created_at
+                                          ).format("DD/MM/YYYY HH:mm[h]")}
+                                        </time>
+                                        {session &&
+                                          activityItem.user.id ===
+                                            session.id && (
+                                            <button
+                                              onClick={() =>
+                                                handleDeleteCommentCL(
+                                                  activityItem.id
+                                                )
+                                              }
+                                              disabled={
+                                                loadings.deleteCommentCL
+                                              }
+                                              className="p-2 rounded-md flex justify-center items-center bg-black/5 hover:bg-black/10 transition duration-300 ease-in-out"
+                                            >
+                                              {loadings.deleteCommentCL &&
+                                              loadings.deleteCommentCL ==
+                                                activityItem.id ? (
+                                                <Loader2
+                                                  size={12}
+                                                  className="mx-auto animate-spin text-zinc-600"
+                                                />
+                                              ) : (
+                                                <Trash2
+                                                  size={12}
+                                                  className="text-red-500"
+                                                />
+                                              )}
+                                            </button>
+                                          )}
+                                      </div>
+                                    </div>
+                                    <p className="text-sm leading-6 text-zinc-500">
+                                      {activityItem.comment}
+                                    </p>
+                                  </div>
+                                </li>
+                              )
+                            )}
                           </ul>
+                          {!checklistDetail.status && (
+                            <div className="mt-6 flex gap-x-3 w-full">
+                              <AvatarName
+                                name={session ? session.name : "PD"}
+                                isAdmin={session && session.manager}
+                              />
+                              <div className="overflow-hidden w-full rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-zinc-300 focus-within:ring-2 focus-within:ring-zinc-600">
+                                <textarea
+                                  rows={1}
+                                  disabled={loadings.addCommentCL}
+                                  value={comment}
+                                  onChange={(e: any) =>
+                                    setComment(e.target.value)
+                                  }
+                                  placeholder="Escreva o seu comentário..."
+                                  className="block w-full outline-none resize-none border-0 bg-transparent py-2 px-3 text-zinc-900 placeholder:text-zinc-400 focus:ring-0 sm:text-sm sm:leading-6"
+                                  defaultValue={""}
+                                />
+                              </div>
+                              <div className="absolute inset-x-0 bottom-0 flex justify-end py-2 pl-3 pr-2">
+                                <button
+                                  type="submit"
+                                  disabled={loadings.addCommentCL}
+                                  onClick={() =>
+                                    handleCommentCL(checklistDetail.id)
+                                  }
+                                  className="rounded-md bg-white px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 hover:bg-zinc-200"
+                                >
+                                  {!loadings.addCommentCL ? (
+                                    `Comentar`
+                                  ) : (
+                                    <Loader2
+                                      size={20}
+                                      className="mx-auto animate-spin"
+                                    />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

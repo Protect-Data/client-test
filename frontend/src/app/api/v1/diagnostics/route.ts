@@ -3,7 +3,7 @@ import { httpClient } from "../httpClient";
 
 export async function GET(req: NextRequest) {
   try {
-    const query: any = await httpClient.get("/files");
+    const query: any = await httpClient.get("/diagnostics");
     return NextResponse.json([...query]);
   } catch (err) {
     console.log("[error]", err);
@@ -15,10 +15,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const searchParams = req.nextUrl.searchParams;
-    const taskId = searchParams.get("taskId");
-    const query: any = await httpClient.post(`/files/${taskId}`, data);
-    console.log("[query]", query);
+    const query: any = await httpClient.post("/diagnostics", {
+      ...data
+    });
     return NextResponse.json({ ...query });
   } catch (err) {
     console.log("[error]", err);
@@ -27,11 +26,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const fileId = searchParams.get("fileId");
-    const query: any = await httpClient.delete(`/files/${fileId}`);
+    const data = await req.json();
+    const query: any = await httpClient.put(`/diagnostics/${data.id}`, {
+      ...data
+    });
     return NextResponse.json({ ...query });
   } catch (err) {
     console.log("[error]", err);
