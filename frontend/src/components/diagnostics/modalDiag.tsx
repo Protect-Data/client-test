@@ -47,7 +47,6 @@ export default function ModalDiagnostic({
   onAdded: () => void;
 }) {
   const [loading, setLoading] = useState<boolean>(false);
-  const [step, setStep] = useState<number>(0);
   const [form, setForm] = useState<any>({
     title: "",
     questions: []
@@ -343,7 +342,7 @@ export default function ModalDiagnostic({
                                   }
                                   className="block w-full rounded-md border-0 py-1.5 px-2 outline-none text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 sm:text-sm sm:leading-6"
                                 />
-                                <span className="pl-4 opacity-50">Nota</span>
+                                <span className="pl-4 opacity-50">Peso</span>
                                 <input
                                   name="score"
                                   type="number"

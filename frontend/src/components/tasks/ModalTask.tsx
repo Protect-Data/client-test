@@ -329,7 +329,8 @@ export default function ModalTaskDetail({
     deleteChecklist: false,
     addComment: false,
     editTeam: false,
-    editTask: false
+    editTask: false,
+    uploadFile: false
   });
 
   useEffect(() => {
@@ -653,6 +654,7 @@ export default function ModalTaskDetail({
   };
 
   const handleUploadFile = async (taskId: string) => {
+    setLoadings({ ...loadings, uploadFile: true });
     try {
       const { data: query }: any = await axios.post(
         `/api/v1/files?taskId=${taskId}`,
@@ -668,11 +670,14 @@ export default function ModalTaskDetail({
       }
       await updateTaskData();
       setImageFile(null);
+      setBase64(null);
       toast.success("Arquivo enviado com sucesso");
       // update task data
     } catch (error) {
       console.error("getTasksList"), error;
       toast.error(`Falha ao enviar o arquivo selecionado.`);
+    } finally {
+      setLoadings({ ...loadings, uploadFile: false });
     }
   };
 
@@ -1714,7 +1719,9 @@ export default function ModalTaskDetail({
                                 Tipo
                               </dt>
                               <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
-                                {fileDetail.mimetype}
+                                {fileDetail.filename.split(".")
+                                  ? `.${fileDetail.filename.split(".")[1]}`
+                                  : fileDetail.mimetype}
                               </dd>
                             </div>
                             <div className="bg-zinc-50 py-3 sm:grid sm:grid-cols-3 sm:gap-4">
@@ -1780,11 +1787,7 @@ export default function ModalTaskDetail({
                           <div className="text-center">
                             {!base64 ? (
                               <>
-                                <CameraIcon
-                                  aria-hidden="true"
-                                  className="mx-auto h-12 w-12 text-gray-300"
-                                />
-                                <div className="mt-4 flex text-sm leading-6 text-gray-600">
+                                <div className="mt-4 flex justify-center p-2 text-sm leading-6 text-gray-600">
                                   <label
                                     htmlFor="file-upload"
                                     className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
@@ -1800,7 +1803,6 @@ export default function ModalTaskDetail({
                                       className="sr-only"
                                     />
                                   </label>
-                                  <p className="pl-1">para anexar</p>
                                 </div>
                                 <p className="text-xs leading-5 text-gray-600">
                                   PNG, JPG, GIF, PDF, CSV up to 10MB
@@ -1823,7 +1825,7 @@ export default function ModalTaskDetail({
                                   className="mt-3 p-2 px-3 text-sm rounded-md text-zinc-600 hover:text-black hover:bg-black/5 transition duration-300 ease-in-out"
                                   onClick={() => setBase64(null)}
                                 >
-                                  Selecionar Outro Arquivo
+                                  Cancelar
                                 </button>
                               </>
                             )}
@@ -1832,11 +1834,22 @@ export default function ModalTaskDetail({
                         {(taskData.files.length <= 0 || base64) && (
                           <div className="flex justify-end items-center">
                             <button
-                              disabled={!base64}
+                              disabled={!base64 || loadings.uploadFile}
                               onClick={() => handleUploadFile(taskData.id)}
                               className="bg-protectdata-500 text-black text-sm flex items-center gap-x-1 p-2 px-3 rounded-md disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                              <Upload size={16} /> Enviar Arquivo
+                              {loadings.uploadFile ? (
+                                <>
+                                  <Loader2
+                                    size={20}
+                                    className="mx-auto animate-spin"
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <Upload size={16} /> Enviar Arquivo
+                                </>
+                              )}
                             </button>
                           </div>
                         )}
@@ -1851,9 +1864,15 @@ export default function ModalTaskDetail({
                                 width={44}
                                 height={44}
                                 alt={x.mimetype}
+                                onError={(e: any) => {
+                                  e.target.onError = null;
+                                  e.target.src = `/assets/files/doc.png`;
+                                }}
                                 src={`/assets/files/${
                                   x.mimetype.includes("spreadsheetml.sheet")
                                     ? `xls`
+                                    : x.mimetype.includes("officedocument")
+                                    ? `doc`
                                     : x.mimetype.split("/")[1]
                                 }.png`}
                               />
@@ -1886,7 +1905,7 @@ export default function ModalTaskDetail({
                                 className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-zinc-200"
                               />
                             ) : null}
-                            <div className="relative flex space-x-3">
+                            <div className="relative flex space-x-3 items-center">
                               <div>
                                 <span className="flex bg-protectdata-500 text-protectdata-950 h-8 w-8 items-center justify-center rounded-full ring-8 ring-white">
                                   {event.action.includes("Comentário") ? (
@@ -1927,6 +1946,8 @@ export default function ModalTaskDetail({
                                       "DD/MM/YYYY HH:mm"
                                     )}
                                   </time>
+                                  <br />
+                                  por {event.user.name}
                                 </div>
                               </div>
                             </div>

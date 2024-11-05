@@ -4,6 +4,8 @@ import "./globals.css";
 import AppProviders from "@/context/ctxNA";
 import { Toaster } from "react-hot-toast";
 
+export const dynamic = "force-dynamic";
+
 const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

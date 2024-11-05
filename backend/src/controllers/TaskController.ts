@@ -118,7 +118,16 @@ export const getAllTask = async (req: any, res: Response) => {
             }
           }
         },
-        logs: true
+        logs: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                id: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -208,7 +217,16 @@ export const getTask = async (req: Request, res: Response) => {
             }
           }
         },
-        logs: true
+        logs: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                id: true
+              }
+            }
+          }
+        }
       }
     });
     if (!findTask) {

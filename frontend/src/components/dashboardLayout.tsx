@@ -17,6 +17,8 @@ import {
   BookmarkCheck,
   ChartBar,
   ChevronDown,
+  EarthLock,
+  GlobeLock,
   HomeIcon,
   ListIcon,
   MenuIcon,
@@ -61,12 +63,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             icon: UsersIcon,
             current: pathname.includes("/dashboard/users")
           },
-          {
+          /*{
             name: "Diagnósticos",
             href: "/dashboard/diagnostics",
             icon: Activity,
             current: pathname.includes("/dashboard/diagnostics")
-          },
+          },*/
           {
             name: "Documentos",
             href: "/dashboard/documents",
@@ -78,7 +80,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             href: "/dashboard/reports",
             icon: ChartBar,
             current: pathname.includes("/dashboard/reports")
-          }
+          } /*,
+          {
+            name: "Políticas de Privacidade",
+            href: "/dashboard/policies",
+            icon: GlobeLock,
+            current: pathname.includes("/dashboard/policies")
+          }*/
         ]
       : [
           {
@@ -86,13 +94,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             href: "/dashboard/tasks",
             icon: BookmarkCheck,
             current: pathname.includes("/dashboard/tasks")
-          },
+          } /*
           {
             name: "Diagnósticos",
             href: "/dashboard/diagnostics",
             icon: Activity,
             current: pathname.includes("/dashboard/diagnostics")
-          },
+          },*/,
           {
             name: "Documentos",
             href: "/dashboard/documents",

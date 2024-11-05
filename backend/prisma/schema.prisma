@@ -25,6 +25,7 @@ model User {
   assignedTasks     Task[]          @relation("TaskMembers")
   assignedChecklist CheckList[]     @relation("ChecklistMembers")
   clientAnswers     ClientAnswers[]
+  policies          PrivacyPolicy[]
 
   @@map("users")
 }
@@ -193,6 +194,21 @@ model ClientAnswers {
   response Json
 
   @@map("client_answers")
+}
+
+model PrivacyPolicy {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  author     String?
+  version    String   @default("1.0")
+  signHash   String?
+  content    String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("politics")
 }
 
 model Log {

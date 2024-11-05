@@ -30,8 +30,19 @@ import { searchDb } from "./controllers/SerchController";
 import {
   addDiagnostic,
   allDiagnostics,
-  editDiagnostic
+  answerDiagnostic,
+  deleteDiagnostic,
+  editDiagnostic,
+  getDiagnostic
 } from "./controllers/DiagnosticController";
+import {
+  createPolicie,
+  deletePolicie,
+  updatePolicie,
+  viewPolicie,
+  viewPolicieById,
+  viewPolicies
+} from "./controllers/PoliciesController";
 
 export const router = Router();
 
@@ -79,5 +90,16 @@ router.delete("/files/:fileId", verifyToken, deleteFile);
 
 // diagnostics
 router.get("/diagnostics", verifyToken, allDiagnostics);
+router.get("/diagnostics/:id", verifyToken, getDiagnostic);
 router.post("/diagnostics", verifyToken, addDiagnostic);
+router.post("/diagnostics/:id", verifyToken, answerDiagnostic);
 router.put("/diagnostics/:id", verifyToken, editDiagnostic);
+router.delete("/diagnostics/:id", verifyToken, deleteDiagnostic);
+
+// privacy policies
+router.get("/policie/:id", viewPolicie); // public view
+router.get("/policies", verifyToken, viewPolicies);
+router.get("/policies/:id", verifyToken, viewPolicieById);
+router.post("/policies", verifyToken, createPolicie);
+router.put("/policies/:id", verifyToken, updatePolicie);
+router.delete("/policies/:id", verifyToken, deletePolicie);

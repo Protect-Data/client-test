@@ -6,10 +6,10 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const diagId = searchParams.get("id");
     if (!diagId) {
-      const query: any = await httpClient.get("/diagnostics");
+      const query: any = await httpClient.get("/policies");
       return NextResponse.json([...query]);
     } else {
-      const query: any = await httpClient.get(`/diagnostics/${diagId}`);
+      const query: any = await httpClient.get(`/policie/${diagId}`);
       return NextResponse.json({ ...query });
     }
   } catch (err) {
@@ -22,15 +22,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
-    const diagId = searchParams.get("id");
+    const policyId = searchParams.get("id");
     const data = await req.json();
-    if (!diagId) {
-      const query: any = await httpClient.post("/diagnostics", {
+    if (!policyId) {
+      const query: any = await httpClient.post("/policies", {
         ...data
       });
       return NextResponse.json({ ...query });
     } else {
-      const query: any = await httpClient.post(`/diagnostics/${diagId}`, {
+      const query: any = await httpClient.post(`/policies/${policyId}`, {
         ...data
       });
       return NextResponse.json({ ...query });
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const data = await req.json();
-    const query: any = await httpClient.put(`/diagnostics/${data.id}`, {
+    const query: any = await httpClient.put(`/policies/${data.id}`, {
       ...data
     });
     return NextResponse.json({ ...query });
@@ -59,8 +59,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
-    const diagId = searchParams.get("diagId");
-    const query: any = await httpClient.delete(`/diagnostics/${diagId}`);
+    const policyId = searchParams.get("id");
+    const query: any = await httpClient.delete(`/policies/${policyId}`);
     return NextResponse.json({ ...query });
   } catch (err) {
     console.log("[error]", err);

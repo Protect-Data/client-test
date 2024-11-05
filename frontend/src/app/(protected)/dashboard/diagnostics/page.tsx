@@ -2,6 +2,7 @@
 
 import DashboardLayout from "@/components/dashboardLayout";
 import ModalDiagnostic from "@/components/diagnostics/modalDiag";
+import ModalGabarito from "@/components/diagnostics/modalGabarito";
 import Tooltip from "@/components/tooltip";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import axios from "axios";
@@ -9,10 +10,13 @@ import dayjs from "dayjs";
 import {
   AlertTriangle,
   CheckSquare,
+  CheckSquare2,
   Edit2,
+  ExternalLink,
   EyeIcon,
   MoreVertical,
   PlusIcon,
+  ReceiptText,
   Trash2
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -26,6 +30,7 @@ export default function DiagnosticsPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [list, setList] = useState<any>(null);
   const [modal, setModal] = useState<any>(null);
+  const [modalGab, setModalGab] = useState<any>(null);
 
   useEffect(() => {
     if (!list) getAllDiags();
@@ -34,12 +39,38 @@ export default function DiagnosticsPage() {
   const getAllDiags = async () => {
     setLoading(true);
     try {
-      const { data: _files }: any = await axios.get("/api/v1/diagnostics");
-      setList(_files);
+      const { data: query }: any = await axios.get("/api/v1/diagnostics");
+      if (query.error) {
+        toast.error(query.error);
+        return false;
+      }
+      setList(query);
     } catch (error) {
       console.error("getAllFiles", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteDiagnostic = async (diagId: string) => {
+    try {
+      if (!window.confirm("Excluir o diagnóstico permanentemente ?")) {
+        toast.error("Cancelado pelo usuário...");
+        return false;
+      }
+      const { data: query }: any = await axios.delete(
+        `/api/v1/diagnostics?diagId=${diagId}`
+      );
+      if (query.error) {
+        toast.error(query.error);
+        return false;
+      }
+      await getAllDiags();
+      toast.success("Diagnóstico excluído com sucesso");
+      // update task data
+    } catch (error) {
+      console.error("getTasksList"), error;
+      toast.error(`Falha ao excluir diagnóstico.`);
     }
   };
 
@@ -146,39 +177,65 @@ export default function DiagnosticsPage() {
                           </td>
                           <td className="whitespace-nowrap p-4 text-sm text-zinc-400 font-semibold">
                             <strong
-                              className={`font-bold text-lg text-red-500`}
+                              className={`font-bold text-lg ${
+                                x.client_answers && x.client_answers.length
+                                  ? x.client_answers[0].score <= 50
+                                    ? `text-yellow-500`
+                                    : `text-emerald-500`
+                                  : `text-red-500`
+                              }`}
                             >
-                              0
+                              {x.client_answers && x.client_answers.length >= 1
+                                ? x.client_answers[0].score
+                                : 0}
                             </strong>
                             /100
                           </td>
                           <td className="whitespace-nowrap py-4 pl-4 pr-4 text-sm text-zinc-500 sm:pr-0 flex items-center gap-x-1">
-                            <Tooltip text="Editar">
-                              <button
-                                onClick={() => setModal(x)}
-                                className="p-2 rounded-md hover:bg-black/10 bg-black/5 transition duration-300 ease-in-out"
+                            {session && session.manager && (
+                              <Tooltip text="Editar">
+                                <button
+                                  onClick={() => setModal(x)}
+                                  className="p-2 rounded-md hover:bg-black/10 bg-black/5 transition duration-300 ease-in-out"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                              </Tooltip>
+                            )}
+                            {x.client_answers ? (
+                              <>
+                                <Tooltip text="Gabaritos">
+                                  <button
+                                    disabled={false}
+                                    onClick={() => setModalGab(x)}
+                                    className="p-2 block rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
+                                  >
+                                    <ReceiptText size={16} />
+                                  </button>
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <></>
+                            )}
+                            <Tooltip text="Acessar">
+                              <Link
+                                href={`/dashboard/diagnostics/${x.id}`}
+                                target="_blank"
+                                className="p-2 block rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
                               >
-                                <Edit2 size={16} />
-                              </button>
+                                <ExternalLink size={16} />
+                              </Link>
                             </Tooltip>
-                            <Tooltip text="Visualizar">
-                              <button
-                                disabled
-                                //onClick={() => setModal(x)}
-                                className="p-2 rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
-                              >
-                                <EyeIcon size={16} />
-                              </button>
-                            </Tooltip>
-                            <Tooltip text="Excluir">
-                              <button
-                                disabled
-                                //onClick={() => setModal(x)}
-                                className="p-2 text-red-500 rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </Tooltip>
+                            {session && session.manager && (
+                              <Tooltip text="Excluir">
+                                <button
+                                  onClick={() => handleDeleteDiagnostic(x.id)}
+                                  className="p-2 text-red-500 rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </Tooltip>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -193,6 +250,11 @@ export default function DiagnosticsPage() {
           edit={!modal ? null : typeof modal === "boolean" ? null : modal}
           setOpen={() => setModal(null)}
           onAdded={getAllDiags}
+        />
+        <ModalGabarito
+          open={modalGab ? true : false}
+          setOpen={() => setModalGab(null)}
+          data={{ ...modalGab }}
         />
       </DashboardLayout>
     </>
