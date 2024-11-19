@@ -63,12 +63,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             icon: UsersIcon,
             current: pathname.includes("/dashboard/users")
           },
-          /*{
+          {
             name: "Diagnósticos",
             href: "/dashboard/diagnostics",
             icon: Activity,
             current: pathname.includes("/dashboard/diagnostics")
-          },*/
+          },
           {
             name: "Documentos",
             href: "/dashboard/documents",
@@ -76,17 +76,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             current: pathname.includes("/dashboard/documents")
           },
           {
+            name: "Política de Privacidade",
+            href: "/dashboard/policies",
+            icon: GlobeLock,
+            current: pathname.includes("/dashboard/policies")
+          },
+          {
             name: "Relatórios",
             href: "/dashboard/reports",
             icon: ChartBar,
             current: pathname.includes("/dashboard/reports")
-          } /*,
-          {
-            name: "Políticas de Privacidade",
-            href: "/dashboard/policies",
-            icon: GlobeLock,
-            current: pathname.includes("/dashboard/policies")
-          }*/
+          }
         ]
       : [
           {
@@ -94,13 +94,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             href: "/dashboard/tasks",
             icon: BookmarkCheck,
             current: pathname.includes("/dashboard/tasks")
-          } /*
+          },
           {
             name: "Diagnósticos",
             href: "/dashboard/diagnostics",
             icon: Activity,
             current: pathname.includes("/dashboard/diagnostics")
-          },*/,
+          },
           {
             name: "Documentos",
             href: "/dashboard/documents",
@@ -347,7 +347,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <MenuItem>
                       <button
                         onClick={() => signOut({ callbackUrl: "/auth/login" })}
-                        className="block px-3 py-1 text-sm leading-6 text-zinc-900 data-[focus]:bg-zinc-50"
+                        className="block w-full px-3 py-1 text-sm leading-6 text-zinc-900 data-[focus]:bg-zinc-50"
                       >
                         Deslogar
                       </button>

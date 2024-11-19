@@ -12,6 +12,7 @@ import {
   getAllTask,
   getTask,
   getTeam,
+  updateKanbanTasks,
   updateTask,
   updateTaskStatus
 } from "./controllers/TaskController";
@@ -33,11 +34,14 @@ import {
   answerDiagnostic,
   deleteDiagnostic,
   editDiagnostic,
-  getDiagnostic
+  generateTaskDiagnostic,
+  getDiagnostic,
+  rateDiagnostic
 } from "./controllers/DiagnosticController";
 import {
   createPolicie,
   deletePolicie,
+  publishPolicie,
   updatePolicie,
   viewPolicie,
   viewPolicieById,
@@ -65,6 +69,7 @@ router.get("/tasks", verifyToken, getAllTask);
 router.get("/task/:id", verifyToken, getTask);
 router.get("/tasks/team", verifyToken, getTeam);
 router.put("/task/status/:id", verifyToken, updateTaskStatus);
+router.put("/task/update", verifyToken, updateKanbanTasks);
 router.post("/tasks", verifyToken, createTask);
 router.put("/tasks/:id", verifyToken, updateTask);
 router.delete("/tasks/:id", verifyToken, deleteTask);
@@ -93,6 +98,12 @@ router.get("/diagnostics", verifyToken, allDiagnostics);
 router.get("/diagnostics/:id", verifyToken, getDiagnostic);
 router.post("/diagnostics", verifyToken, addDiagnostic);
 router.post("/diagnostics/:id", verifyToken, answerDiagnostic);
+router.post("/diagnostics/rate/:id", verifyToken, rateDiagnostic);
+router.post(
+  "/diagnostics/generate-task/:id",
+  verifyToken,
+  generateTaskDiagnostic
+);
 router.put("/diagnostics/:id", verifyToken, editDiagnostic);
 router.delete("/diagnostics/:id", verifyToken, deleteDiagnostic);
 
@@ -100,6 +111,7 @@ router.delete("/diagnostics/:id", verifyToken, deleteDiagnostic);
 router.get("/policie/:id", viewPolicie); // public view
 router.get("/policies", verifyToken, viewPolicies);
 router.get("/policies/:id", verifyToken, viewPolicieById);
+router.get("/policies/publish/:id", verifyToken, publishPolicie);
 router.post("/policies", verifyToken, createPolicie);
 router.put("/policies/:id", verifyToken, updatePolicie);
 router.delete("/policies/:id", verifyToken, deletePolicie);

@@ -50,6 +50,9 @@ export const getAllTask = async (req: any, res: Response) => {
     // find tasks
     const tasks = await prisma.task.findMany({
       where: _where,
+      orderBy: {
+        position: "asc"
+      },
       select: {
         id: true,
         title: true,
@@ -375,20 +378,73 @@ export const updateTaskStatus = async (req: any, res: Response) => {
       }
     });
 
-    if (task.id) {
-      await createLog(
-        `O status foi atualizado para: ${status === 0
-          ? `A Fazer`
-          : status === 1 ? `Em Progresso` : `Finalizado`}`,
-        userId,
-        task.id
-      );
-    }
+    // if (task.id) {
+    //   await createLog(
+    //     `O status foi atualizado para: ${status === 0
+    //       ? `A Fazer`
+    //       : status === 1 ? `Em Progresso` : `Finalizado`}`,
+    //     userId,
+    //     task.id
+    //   );
+    // }
 
     return res.status(201).json(task);
   } catch (error) {
     console.error(error);
     return res.status(400).json(error);
+  }
+};
+
+export const updateKanbanTasks = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const { kanbanResume } = req.body;
+
+    const findAdm = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        manager: true
+      }
+    });
+
+    if (!findAdm) {
+      return res
+        .status(400)
+        .json({ message: "Somente administradores podem mover os cards" });
+    }
+
+    const updatePromises = kanbanResume.map((task: any) => {
+      return prisma.task
+        .findUnique({
+          where: { id: task.cardId }
+        })
+        .then(existingTask => {
+          if (
+            existingTask &&
+            (existingTask.status !== parseInt(task.statusKey) ||
+              existingTask.position !== parseInt(task.position))
+          ) {
+            return prisma.task.update({
+              where: { id: task.cardId },
+              data: {
+                status: task.statusKey,
+                position: task.position
+              }
+            });
+          }
+          return Promise.resolve(null);
+        });
+    });
+
+    const updatedTasks = await Promise.all(updatePromises);
+    const tasksUpdated = updatedTasks.filter(task => task !== null);
+
+    return res.status(200).json({ ...tasksUpdated, success: true });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(400)
+      .json({ message: "Erro ao atualizar as tarefas", error });
   }
 };
 

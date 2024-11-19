@@ -584,6 +584,10 @@ export default function ModalTaskDetail({
   };
 
   const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("Excluir comentário permanemtemente ?")) {
+      toast.error("Cancelado pelo usuário...");
+      return false;
+    }
     try {
       const { data: query }: any = await axios.delete(
         `/api/v1/comments?commentId=${commentId}`
@@ -883,14 +887,19 @@ export default function ModalTaskDetail({
                             (session && session.manager)) && (
                             <div className="bg-white py-3 sm:grid sm:grid-cols-3 sm:gap-4">
                               <dt className="text-sm font-medium leading-6 text-zinc-900">
-                                {taskData.members.length > 1
+                                {taskData.members.length >= 2
                                   ? `Responsáveis`
                                   : `Responsável`}
                               </dt>
                               <dd className="mt-1 text-sm leading-6 text-zinc-700 sm:col-span-2 sm:mt-0">
                                 <div className="flex space-x-2">
+                                  {taskData.members.length <= 0 && (
+                                    <span className="text-zinc-300 font-semibold">
+                                      Tarefa própria, sem responsáveis...
+                                    </span>
+                                  )}
                                   {taskData.members.map((x: any, k: number) => (
-                                    <Tooltip text={x.name}>
+                                    <Tooltip key={k} text={x.name}>
                                       <AvatarName
                                         key={k}
                                         name={x.name}
@@ -1203,6 +1212,19 @@ export default function ModalTaskDetail({
                               placeholder="Adicionar nova tarefa"
                             />
                             <div className="w-auto flex -space-x-1 px-4 pr-6">
+                              {session && members.length <= 0 && (
+                                <Tooltip text={session.name}>
+                                  <button
+                                    disabled
+                                    className="disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <AvatarName
+                                      name={session.name}
+                                      isAdmin={session.manager}
+                                    />
+                                  </button>
+                                </Tooltip>
+                              )}
                               {team &&
                                 team.map(
                                   (x: any, k: number) =>
@@ -1787,10 +1809,10 @@ export default function ModalTaskDetail({
                           <div className="text-center">
                             {!base64 ? (
                               <>
-                                <div className="mt-4 flex justify-center p-2 text-sm leading-6 text-gray-600">
+                                <div className="flex justify-center p-2 text-sm leading-6 text-gray-600">
                                   <label
                                     htmlFor="file-upload"
-                                    className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
+                                    className="relative cursor-pointer bg-zinc-100 hover:bg-zinc-200 p-2 px-4 rounded-md font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500 transition duration-300 ease-in-out"
                                   >
                                     <span>Selecione um arquivo</span>
                                     <input

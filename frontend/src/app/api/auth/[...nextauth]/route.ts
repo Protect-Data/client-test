@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { API_URL } from "@/utils/keys";
 
 export const authOption: NextAuthOptions = {
-  secret: "NEXTAUTH_SECRET",
+  secret: process.env.NEXTAUTH_SECRET || "NEXTAUTH_SECRET",
   session: { strategy: "jwt" },
   providers: [
     CredentialsProvider({
@@ -39,7 +39,8 @@ export const authOption: NextAuthOptions = {
     })
   ],
   pages: {
-    signIn: "/auth/login"
+    signIn: "/auth/login",
+    signOut: "/auth/login"
   },
   callbacks: {
     async jwt({ token, user }: any) {

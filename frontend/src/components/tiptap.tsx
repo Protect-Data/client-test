@@ -240,14 +240,21 @@ const extensions = [
   })
 ];
 
-const content = ``;
-
-const Tiptap = () => {
+const Tiptap = ({
+  defaultContent,
+  onUpdate
+}: {
+  defaultContent: any;
+  onUpdate: (e: any) => void;
+}) => {
   return (
     <EditorProvider
       slotBefore={<MenuBar />}
       extensions={extensions}
-      content={content}
+      content={defaultContent}
+      onUpdate={({ editor }) => {
+        onUpdate(editor.getHTML());
+      }}
     ></EditorProvider>
   );
 };

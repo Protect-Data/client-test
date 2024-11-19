@@ -52,6 +52,7 @@ model Task {
   description String?
   privacy     String    @default("public")
   status      Int       @default(0)
+  position    Int       @default(0)
 
   userId String
   user   User   @relation(fields: [userId], references: [id])

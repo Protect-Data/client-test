@@ -13,13 +13,15 @@ export default function ModalPolicies({
   setOpen,
   edit,
   remove,
-  onAdded
+  onAdded,
+  latestVersion
 }: {
   open: boolean;
   setOpen: (e: boolean) => void;
   edit?: any;
   remove?: string | null | undefined;
   onAdded: () => void;
+  latestVersion: string;
 }) {
   const [loading, setLoading] = useState<boolean>(false);
   const [form, setForm] = useState<any>({
@@ -27,6 +29,22 @@ export default function ModalPolicies({
     version: "",
     content: ""
   });
+
+  function incrementVersion(latestVersion: any) {
+    const [major, minor, patch] = latestVersion.split(".").map(Number);
+    let newMajor = major;
+    let newMinor = minor;
+    let newPatch = patch + 1;
+    if (newPatch > 9) {
+      newPatch = 0;
+      newMinor += 1;
+    }
+    if (newMinor > 9) {
+      newMinor = 0;
+      newMajor += 1;
+    }
+    return `${newMajor}.${newMinor}.${newPatch}`;
+  }
 
   useEffect(() => {
     if (open) {
@@ -39,13 +57,16 @@ export default function ModalPolicies({
         });
       } else {
         setForm({
-          author: "Protect Data",
-          version: "1.0.0",
-          content: "* POLÍTICA DE PRIVACIDADE * V. 1.0.0 *"
+          author: "ChatGuru",
+          version:
+            latestVersion !== "0.0.0"
+              ? incrementVersion(latestVersion)
+              : "1.0.0",
+          content: "* INSIRA O CONTEÚDO DA POLÍTICA DE PRIVACIDADE AQUI *"
         });
       }
     }
-  }, [open, edit]);
+  }, [open, edit, latestVersion]);
 
   const handleAdd = async () => {
     if (form.version === "" || form.content === "") {
@@ -180,17 +201,22 @@ export default function ModalPolicies({
                             type="text"
                             name="version"
                             value={form.version}
-                            disabled={loading}
+                            disabled={loading || edit}
                             placeholder="1.0.0"
                             onChange={(e: any) =>
                               setForm({ ...form, version: e.target.value })
                             }
-                            className="block w-full rounded-md border-0 py-1.5 px-2 outline-none text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-600 sm:text-sm sm:leading-6"
+                            className="block w-full rounded-md border-0 disabled:cursor-not-allowed disabled:opacity-50 py-1.5 px-2 outline-none text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-600 sm:text-sm sm:leading-6"
                           />
                         </div>
                       </div>
                       <div className="sm:col-span-6">
-                        <Tiptap />
+                        <Tiptap
+                          defaultContent={form.content}
+                          onUpdate={(e: any) =>
+                            setForm({ ...form, content: e })
+                          }
+                        />
                       </div>
                     </div>
                   </>

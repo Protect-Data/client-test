@@ -46,7 +46,9 @@ export default function Card({
     <>
       <div
         ref={ref}
-        className="w-full bg-white shadow-lg border text-sm p-2.5 px-4 rounded-md"
+        className={`p-4 bg-white rounded-lg transition-transform duration-150 ease-in-out ${
+          isDragging ? "scale-105 opacity-100 z-10 shadow-xl" : "shadow-md"
+        }`}
       >
         <div className="w-full flex justify-between items-center">
           <span
@@ -66,7 +68,11 @@ export default function Card({
           </div>
         </div>
         <div className="w-full pt-2 text-zinc-500">
-          {data.description || "Descrição vazia."}
+          {data.description && data.description !== ""
+            ? `${data.description.substring(0, 160)}${
+                data.description.length > 160 ? `...` : ``
+              }`
+            : "Descrição vazia."}
         </div>
         <div className="w-full mt-4 flex flex-col xl:flex-row gap-y-4 justify-between items-center">
           <div className="flex items-center gap-x-4 font-medium text-xs text-zinc-600">

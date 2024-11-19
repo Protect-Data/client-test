@@ -3,6 +3,7 @@
 import DashboardLayout from "@/components/dashboardLayout";
 import ModalDiagnostic from "@/components/diagnostics/modalDiag";
 import ModalGabarito from "@/components/diagnostics/modalGabarito";
+import ModalHistorico from "@/components/diagnostics/modalHistoric";
 import Tooltip from "@/components/tooltip";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import axios from "axios";
@@ -11,6 +12,7 @@ import {
   AlertTriangle,
   CheckSquare,
   CheckSquare2,
+  Clock,
   Edit2,
   ExternalLink,
   EyeIcon,
@@ -27,10 +29,11 @@ import toast from "react-hot-toast";
 
 export default function DiagnosticsPage() {
   const { data: session }: any = useSession();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [list, setList] = useState<any>(null);
   const [modal, setModal] = useState<any>(null);
   const [modalGab, setModalGab] = useState<any>(null);
+  const [modalHis, setModalHis] = useState<any>(null);
 
   useEffect(() => {
     if (!list) getAllDiags();
@@ -100,28 +103,59 @@ export default function DiagnosticsPage() {
           </div>
         </div>
         {loading ? (
-          <ul className="w-full grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
-            {[
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0
-            ].map((x: any, k: number) => (
-              <div
-                key={k}
-                className="col-span-1 animate-pulse border border-zinc-200 flex justify-between items-center gap-x-2 bg-black/5 rounded-md p-2 transition duration-300 ease-in-out"
-              >
-                <div className="flex items-center gap-x-3">
-                  <div className="w-11 h-11 bg-zinc-300 rounded-md" />
-                  <div>
+          <>
+            <table className="min-w-full divide-y divide-zinc-300 animate-pulse">
+              <thead>
+                <tr className="divide-x divide-zinc-200">
+                  <th
+                    scope="col"
+                    className="py-3.5 pl-4 pr-4 text-left text-sm font-semibold text-zinc-900 sm:pl-0"
+                  >
                     <div className="w-44 h-4 bg-zinc-300 rounded-md mb-1" />
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3.5 text-left text-sm font-semibold text-zinc-900"
+                  >
+                    <div className="w-20 h-4 bg-zinc-300 rounded-md mb-1" />
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3.5 text-left text-sm font-semibold text-zinc-900"
+                  >
+                    <div className="w-44 h-4 bg-zinc-300 rounded-md mb-1" />
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-3.5 pl-4 pr-4 text-left text-sm font-semibold text-zinc-900 sm:pr-0"
+                  >
                     <div className="w-24 h-4 bg-zinc-300 rounded-md mb-1" />
-                  </div>
-                </div>
-                <div>
-                  <div className="w-4 h-8 bg-zinc-300 rounded-md mb-1" />
-                </div>
-              </div>
-            ))}
-          </ul>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 bg-white">
+                {[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].map((x: any, k: number) => (
+                  <tr key={k} className="divide-x divide-zinc-200">
+                    <td className="whitespace-nowrap py-4 pl-4 pr-4 text-sm font-medium text-zinc-900 sm:pl-0">
+                      <div className="w-32 h-4 bg-zinc-300 rounded-md mb-1" />
+                    </td>
+                    <td className="whitespace-nowrap p-4 text-sm font-semibold text-zinc-500">
+                      <div className="w-44 h-4 bg-zinc-300 rounded-md mb-1" />
+                    </td>
+                    <td className="whitespace-nowrap p-4 text-sm text-zinc-400 font-semibold">
+                      <div className="w-20 h-4 bg-zinc-300 rounded-md mb-1" />
+                    </td>
+                    <td className="whitespace-nowrap py-4 pl-4 pr-4 text-sm text-zinc-500 sm:pr-0 flex items-center gap-x-1">
+                      <div className="w-8 h-8 bg-zinc-300 rounded-md mb-1" />
+                      <div className="w-8 h-8 bg-zinc-300 rounded-md mb-1" />
+                      <div className="w-8 h-8 bg-zinc-300 rounded-md mb-1" />
+                      <div className="w-8 h-8 bg-zinc-300 rounded-md mb-1" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         ) : (
           <>
             {!list || list.length <= 0 ? (
@@ -176,20 +210,31 @@ export default function DiagnosticsPage() {
                             {x.questions.length}
                           </td>
                           <td className="whitespace-nowrap p-4 text-sm text-zinc-400 font-semibold">
-                            <strong
-                              className={`font-bold text-lg ${
-                                x.client_answers && x.client_answers.length
-                                  ? x.client_answers[0].score <= 50
-                                    ? `text-yellow-500`
-                                    : `text-emerald-500`
-                                  : `text-red-500`
-                              }`}
-                            >
-                              {x.client_answers && x.client_answers.length >= 1
-                                ? x.client_answers[0].score
-                                : 0}
-                            </strong>
-                            /100
+                            {x.client_answers.length <= 0 ? (
+                              <></>
+                            ) : (
+                              <>
+                                <strong
+                                  className={`font-bold text-lg ${
+                                    x.client_answers && x.client_answers.length
+                                      ? x.client_answers[0].score <= 20
+                                        ? `text-red-500`
+                                        : x.client_answers[0].score <= 75
+                                        ? `text-yellow-500`
+                                        : `text-emerald-500`
+                                      : ``
+                                  }`}
+                                >
+                                  {x.client_answers &&
+                                  x.client_answers.length >= 1
+                                    ? x.client_answers[0].score === 0
+                                      ? `?`
+                                      : x.client_answers[0].score
+                                    : `?`}
+                                </strong>
+                                /100
+                              </>
+                            )}
                           </td>
                           <td className="whitespace-nowrap py-4 pl-4 pr-4 text-sm text-zinc-500 sm:pr-0 flex items-center gap-x-1">
                             {session && session.manager && (
@@ -206,13 +251,24 @@ export default function DiagnosticsPage() {
                               <>
                                 <Tooltip text="Gabaritos">
                                   <button
-                                    disabled={false}
+                                    disabled={x.client_answers.length <= 0}
                                     onClick={() => setModalGab(x)}
                                     className="p-2 block rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
                                   >
                                     <ReceiptText size={16} />
                                   </button>
                                 </Tooltip>
+                                {x.client_answers.length >= 2 && (
+                                  <Tooltip text="Histórico">
+                                    <button
+                                      disabled={x.client_answers.length < 2}
+                                      onClick={() => setModalHis(x)}
+                                      className="p-2 block rounded-md hover:bg-black/10 bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 transition duration-300 ease-in-out"
+                                    >
+                                      <Clock size={16} />
+                                    </button>
+                                  </Tooltip>
+                                )}
                               </>
                             ) : (
                               <></>
@@ -255,6 +311,13 @@ export default function DiagnosticsPage() {
           open={modalGab ? true : false}
           setOpen={() => setModalGab(null)}
           data={{ ...modalGab }}
+          diagTitle={modalGab ? modalGab.title : null}
+          onReload={getAllDiags}
+        />
+        <ModalHistorico
+          open={modalHis ? true : false}
+          setOpen={() => setModalHis(null)}
+          data={modalHis ? modalHis.client_answers : null}
         />
       </DashboardLayout>
     </>

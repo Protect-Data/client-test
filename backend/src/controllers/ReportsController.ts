@@ -8,120 +8,174 @@ export const getReports = async (req: Request, res: Response) => {
   try {
     const payloadStructure: any = {
       tasks: {
-        title: "Relatório de Tarefas",
         db: null,
         labels: [],
         data: []
       },
-      byUsers: {
-        title: "Relatório de Usuários",
+      tasksFinished: {
         db: null,
         labels: [],
         data: []
       },
-      comparative: {
-        title: "Comparativo com o Mês Anterior",
-        db: null,
-        labels: [],
-        data: []
+      counter: {
+        tasks: 0,
+        tasksFinished: 0,
+        tasksPercent: 0,
+        users: 0,
+        admins: 0,
+        diagnostics: 0,
+        diagnosticsAnswered: 0,
+        documents: 0,
+        policies: 0,
+        policiesActive: 0,
+        score: 0
       }
     };
 
-    // tasks
-    const tasks = await prisma.task.groupBy({
-      by: ["created_at"],
-      _count: {
-        id: true
-      },
-      orderBy: {
-        created_at: "asc"
-      },
+    // média de conformidade
+    // calcular a media do score de todas as últimas respostas
+    const latestScores = await prisma.diagnostic.findMany({
       where: {
-        // status: 2,
-        created_at: {
-          lte: dayjs().toISOString(),
-          gte: dayjs().startOf("month").toISOString()
+        client_answers: {
+          some: {}
+        }
+      },
+      select: {
+        id: true,
+        client_answers: {
+          orderBy: {
+            created_at: 'desc'
+          },
+          take: 1,
+          select: {
+            score: true,
+          }
         }
       }
     });
+    const averageScore = latestScores.reduce((acc:any, diag: any) => acc + diag.client_answers[0]?.score, 0) / latestScores.length;
+    payloadStructure.counter.score = averageScore.toFixed();
+
+    // tasks
+    const startOfYear = dayjs().startOf("year").toISOString(); // Início do ano corrente
+    const endOfYear = dayjs().endOf("year").toISOString(); // Fim do ano corrente
+    const allMonths = Array.from({ length: 12 }, (_, index) =>
+      dayjs().month(index).format("YYYY-MM")
+    );
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        created_at: {
+          gte: startOfYear, // Começo do ano corrente
+          lte: endOfYear // Final do ano corrente
+        }
+      },
+      select: {
+        created_at: true // Vamos usar apenas a data de criação
+      }
+    });
+
     if (tasks) {
-      const taskCountByDay = tasks.reduce((acc: any, task) => {
-        const day = formatDate(task.created_at);
-        if (!acc[day]) {
-          acc[day] = 1;
+      const taskCountByMonth = tasks.reduce((acc: any, task) => {
+        const month = dayjs(task.created_at).format("YYYY-MM");
+        if (acc[month]) {
+          acc[month] += 1;
         } else {
-          acc[day]++;
+          acc[month] = 1;
         }
         return acc;
       }, {});
-      const result = Object.entries(taskCountByDay).map(([date, count]) => ({
-        date,
-        count
+      const result = allMonths.map(month => ({
+        date: month,
+        count: taskCountByMonth[month] || 0
       }));
       payloadStructure.tasks.db = result;
       payloadStructure.tasks.labels = result.map((x: any) => x.date);
       payloadStructure.tasks.data = result.map((x: any) => x.count);
     }
-    // users
-    const users = await prisma.task.findMany({
-      select: {
-        userId: true,
-        status: true,
-        user: {
-          select: {
-            name: true
-          }
+
+    const tasksF = await prisma.task.findMany({
+      where: {
+        status: 2,
+        created_at: {
+          gte: startOfYear, // Começo do ano corrente
+          lte: endOfYear // Final do ano corrente
         }
       },
+      select: {
+        created_at: true // Vamos usar apenas a data de criação
+      }
+    });
+
+    if (tasksF) {
+      const taskCountByMonth = tasksF.reduce((acc: any, task) => {
+        const month = dayjs(task.created_at).format("YYYY-MM");
+        if (acc[month]) {
+          acc[month] += 1;
+        } else {
+          acc[month] = 1;
+        }
+        return acc;
+      }, {});
+      const result = allMonths.map(month => ({
+        date: month,
+        count: taskCountByMonth[month] || 0
+      }));
+      payloadStructure.tasksFinished.db = result;
+      payloadStructure.tasksFinished.labels = result.map((x: any) => x.date);
+      payloadStructure.tasksFinished.data = result.map((x: any) => x.count);
+    }
+
+    // counter
+    const countTasks = await prisma.task.count();
+    payloadStructure.counter.tasks = countTasks;
+    const countTasksFinished = await prisma.task.count({
       where: {
-        created_at: {
-          lte: dayjs().toISOString(),
-          gte: dayjs().startOf("month").toISOString()
+        status: 2
+      }
+    });
+    payloadStructure.counter.tasksFinished = countTasksFinished;
+    payloadStructure.counter.tasksPercent = (countTasksFinished /
+      countTasks *
+      100).toFixed(1);
+    const countUsers = await prisma.user.count();
+    payloadStructure.counter.users = countUsers;
+    const countAdmins = await prisma.user.count({
+      where: {
+        manager: true
+      }
+    });
+    payloadStructure.counter.admins = (countAdmins / countUsers * 100).toFixed(
+      1
+    );
+    const countDiags = await prisma.diagnostic.count();
+    payloadStructure.counter.diagnostics = countDiags;
+    const countDiagsAnswer = await prisma.diagnostic.count({
+      where: {
+        client_answers: {
+          some: {}
         }
       }
     });
-    if (users) {
-      const taskCountByUser = users.reduce((acc: any, task: any) => {
-        const { userId, user: { name } } = task;
-        if (!acc[userId]) {
-          acc[userId] = {
-            userName: name,
-            toDo: 0,
-            inProgress: 0,
-            done: 0
-          };
+    payloadStructure.counter.diagnosticsAnswered = (countDiagsAnswer /
+      countDiags *
+      100).toFixed(1);
+    const countDocuments = await prisma.file.count();
+    payloadStructure.counter.documents = countDocuments;
+    const countPolicies = await prisma.privacyPolicy.count();
+    const countPoliciesActive = await prisma.privacyPolicy.count({
+      where: {
+        NOT: {
+          signHash: null
         }
-        if (task.status === 0) {
-          acc[userId].toDo++;
-        } else if (task.status === 1) {
-          acc[userId].inProgress++;
-        } else if (task.status === 2) {
-          acc[userId].done++;
-        }
-
-        return acc;
-      }, {});
-      // Transformando o resultado em um array
-      const result = Object.entries(
-        taskCountByUser
-      ).map(([userId, counts]: any) => ({
-        user: counts.userName,
-        toDo: counts.toDo,
-        inProgress: counts.inProgress,
-        done: counts.done
-      }));
-      payloadStructure.byUsers.db = result;
-      payloadStructure.byUsers.labels = result.map((x: any) => x.user);
-      payloadStructure.byUsers.data = {
-        toDo: result.map((x: any) => x.toDo),
-        inProgress: result.map((x: any) => x.inProgress),
-        done: result.map((x: any) => x.done)
-      };
-    }
-    // comparative
+      }
+    });
+    payloadStructure.counter.policies = countPolicies;
+    payloadStructure.counter.policiesActive = countPoliciesActive;
 
     return res.status(200).json(payloadStructure);
   } catch (error) {
+    console.log("getReports", error);
     return res.status(400).json(error);
   }
 };

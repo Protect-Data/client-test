@@ -118,6 +118,8 @@ export default function DocumentsPage() {
                         src={`/assets/files/${
                           x.mimetype.includes("spreadsheetml.sheet")
                             ? `xls`
+                            : x.mimetype.includes("wordprocessingml.document")
+                            ? `doc`
                             : x.mimetype.split("/")[1]
                         }.png`}
                       />
@@ -128,7 +130,8 @@ export default function DocumentsPage() {
                         </span>
                         <span className="text-zinc-500 text-xs flex items-center gap-x-1 capitalize">
                           <CheckSquare size={12} />
-                          {x.task.title} &bull;{` `}
+                          {x.task.title.substring(0, 15)}
+                          {x.task.title.length > 15 && `...`} |{` `}
                           {dayjs(x.created_at).format("DD/MM/YYYY HH:mm")}
                         </span>
                       </div>

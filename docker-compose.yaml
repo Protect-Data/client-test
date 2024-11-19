@@ -16,6 +16,8 @@ services:
     working_dir: /app
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AUTH_URL=https://chatguru.protectdata.app
     volumes:
       - "./frontend:/app/public"
       - "./src:/app/src"

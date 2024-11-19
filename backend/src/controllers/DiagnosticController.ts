@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
+import { createLog } from "../services/logs.service";
 
 export const allDiagnostics = async (req: any, res: Response) => {
   try {
@@ -32,8 +33,16 @@ export const allDiagnostics = async (req: any, res: Response) => {
         },
         client_answers: {
           select: {
+            created_at: true,
+            id: true,
             score: true,
-            response: true
+            response: true,
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           },
           orderBy: {
             created_at: "desc"
@@ -156,11 +165,15 @@ export const answerDiagnostic = async (req: any, res: Response) => {
       }
     });
     // avaliação
+    let mustAvaliation = false;
     let maxScore = 0;
     let notas = [];
     let i = 0;
     for (const question of questions) {
       maxScore += question.answers.length;
+      if (question.answers.length <= 0) {
+        mustAvaliation = true;
+      }
       const findAnswer = question.answers.find(
         (x: any) => x.title === answers[i]
       );
@@ -182,7 +195,7 @@ export const answerDiagnostic = async (req: any, res: Response) => {
       data: {
         userId,
         diagnosticId: id,
-        score: pontuacaoFinal || 0,
+        score: mustAvaliation ? 0 : pontuacaoFinal,
         response: answers
       }
     });
@@ -289,6 +302,115 @@ export const deleteDiagnostic = async (req: any, res: Response) => {
     return res.status(201).json(task);
   } catch (error) {
     console.error(error);
+    return res.status(400).json(error);
+  }
+};
+
+export const rateDiagnostic = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { caId } = req.query;
+    const { id: userId } = req.user;
+    const { answers } = req.body;
+    // is admin
+    // get diagnostic
+    const diagnostic = await prisma.diagnostic.findUnique({
+      where: {
+        id
+      }
+    });
+    if (!diagnostic) {
+      return res.status(400).json({ message: "Diagnóstico não encontrado" });
+    }
+    // get answers and notes
+    const questions = await prisma.questions.findMany({
+      where: {
+        diagnosticId: id
+      },
+      select: {
+        title: true,
+        answers: {
+          select: {
+            title: true,
+            score: true
+          }
+        }
+      }
+    });
+    // avaliação
+    let maxScore = 0;
+    let notas = [];
+    let i = 0;
+    for (const question of questions) {
+      maxScore += 3;
+      const findAnswer = question.answers.find(
+        (x: any) => x.title === answers[i]
+      );
+      if (findAnswer) {
+        notas.push(findAnswer.score);
+      } else {
+        // add a nota enviada no gabarito
+        notas.push(answers[i]);
+      }
+      i++;
+    }
+    // calcula a nota
+    const totalUserScore = notas.reduce(
+      (acc: number, score: any) => acc + score,
+      0
+    );
+    const pontuacaoFinal = Math.round(totalUserScore / maxScore * 100);
+    // update note
+    const saveAnswers = await prisma.clientAnswers.update({
+      where: {
+        id: caId
+      },
+      data: {
+        score: pontuacaoFinal
+      }
+    });
+    return res.status(200).json(saveAnswers);
+  } catch (error) {
+    return res.status(400).json(error);
+  }
+};
+
+export const generateTaskDiagnostic = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const { title, tasks } = req.body;
+    // is admin
+    // create the task
+    const task = await prisma.task.create({
+      data: {
+        title,
+        description: `Tarefa importada do Diagnóstico ${title}`,
+        status: 0,
+        privacy: "public",
+        user: { connect: { id: userId } },
+        checklist: {
+          create: tasks.map((item: any) => ({
+            title: `[${item.question}]: ${item.answer}`,
+            status: 0,
+            user: { connect: { id: userId } }
+          }))
+        }
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        privacy: true,
+        description: true
+      }
+    });
+
+    if (task.id) {
+      await createLog(`Tarefa importada de ${title}`, userId, task.id);
+    }
+
+    return res.status(200).json(task);
+  } catch (error) {
     return res.status(400).json(error);
   }
 };

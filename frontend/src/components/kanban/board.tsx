@@ -15,14 +15,18 @@ const KanbanBoard = ({
 }) => {
   const [cards, setCards] = useState([...data]);
 
-  const moveCard = async (id: string, newStatus: number) => {
-    // move task to status
+  const moveCard = async (
+    id: string,
+    newStatus: number,
+    targetIndex: number
+  ) => {
     await updateTaskStatus(id, newStatus);
-    // reorder on frontend
+    console.log("targetIndex", targetIndex);
     setCards((prevKanban) => {
       const newKanban = [...prevKanban];
-      let taskToMove: any = null;
+      let taskToMove = null;
       let currentColumnIndex = -1;
+      // Encontre e remova o card da posição atual
       for (let i = 0; i < newKanban.length; i++) {
         const taskIndex = newKanban[i].list.findIndex(
           (task: any) => task.id === id
@@ -34,9 +38,16 @@ const KanbanBoard = ({
           break;
         }
       }
+      // Insere o card na nova posição
       if (taskToMove) {
         taskToMove.status = newStatus;
-        newKanban[newStatus].list.push(taskToMove);
+        if (currentColumnIndex === newStatus) {
+          // Movendo dentro da mesma coluna, reposiciona no índice alvo
+          newKanban[newStatus].list.splice(targetIndex, 0, taskToMove);
+        } else {
+          // Movendo para uma coluna diferente, insere no índice final
+          newKanban[newStatus].list.push(taskToMove);
+        }
       }
       return newKanban;
     });

@@ -2,6 +2,7 @@
 
 import DashboardLayout from "@/components/dashboardLayout";
 import ModalPolicies from "@/components/policies/modalPolicies";
+import ModalSignPrivacyPolicy from "@/components/policies/modalSign";
 import Tooltip from "@/components/tooltip";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import axios from "axios";
@@ -24,6 +25,28 @@ export default function PrivacyPoliciesPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [list, setList] = useState<any>(null);
   const [modal, setModal] = useState<any>(null);
+  const [publishModal, setPublishModal] = useState<any>(null);
+
+  function getLatestVersion(policies: any) {
+    return policies.reduce((latest: any, current: any) => {
+      const [latestMajor, latestMinor, latestPatch] = latest.version
+        .split(".")
+        .map(Number);
+      const [currentMajor, currentMinor, currentPatch] = current.version
+        .split(".")
+        .map(Number);
+      if (
+        currentMajor > latestMajor ||
+        (currentMajor === latestMajor && currentMinor > latestMinor) ||
+        (currentMajor === latestMajor &&
+          currentMinor === latestMinor &&
+          currentPatch > latestPatch)
+      ) {
+        return current;
+      }
+      return latest;
+    }, policies[0]);
+  }
 
   useEffect(() => {
     if (!list) getAllPolicies();
@@ -45,25 +68,25 @@ export default function PrivacyPoliciesPage() {
     }
   };
 
-  const handleDeletePolicy = async (diagId: string) => {
+  const handleDeletePolicy = async (privId: string) => {
     try {
-      if (!window.confirm("Excluir o diagnóstico permanentemente ?")) {
+      if (!window.confirm("Excluir a política permanentemente ?")) {
         toast.error("Cancelado pelo usuário...");
         return false;
       }
       const { data: query }: any = await axios.delete(
-        `/api/v1/diagnostics?diagId=${diagId}`
+        `/api/v1/policies?id=${privId}`
       );
       if (query.error) {
         toast.error(query.error);
         return false;
       }
       await getAllPolicies();
-      toast.success("Diagnóstico excluído com sucesso");
+      toast.success("Política excluída com sucesso");
       // update task data
     } catch (error) {
       console.error("getTasksList"), error;
-      toast.error(`Falha ao excluir diagnóstico.`);
+      toast.error(`Falha ao excluir política de privacidade.`);
     }
   };
 
@@ -138,18 +161,18 @@ export default function PrivacyPoliciesPage() {
                       >
                         <div className="flex items-center gap-x-3">
                           <div className="w-12 h-12 bg-zinc-200 flex justify-center items-center text-xs font-bold rounded-md">
-                            1.0
+                            {x.version}
                           </div>
                           <div>
                             <div className="mb-1">{x.author}</div>
                             <div className="mb-1 text-xs">
                               {x.signHash ? (
                                 <span className="font-bold text-emerald-500">
-                                  Assinado
+                                  Publicado
                                 </span>
                               ) : (
                                 <span className="font-bold text-protectdata-600">
-                                  Pendente
+                                  Publicação Pendente
                                 </span>
                               )}{" "}
                               &bull;
@@ -184,7 +207,7 @@ export default function PrivacyPoliciesPage() {
                                     Visualizar
                                   </Link>
                                 </MenuItem>
-                                <MenuItem>
+                                {/* <MenuItem>
                                   <button
                                     type="button"
                                     onClick={() => setModal(x)}
@@ -192,15 +215,15 @@ export default function PrivacyPoliciesPage() {
                                   >
                                     Editar
                                   </button>
-                                </MenuItem>
+                                </MenuItem> */}
                                 {session && session.manager && !x.signHash && (
                                   <MenuItem>
                                     <button
                                       type="button"
-                                      onClick={() => {}}
+                                      onClick={() => setPublishModal(x)}
                                       className="w-full text-left px-4 py-2 text-sm text-emerald-500 data-[focus]:bg-gray-100 data-[focus]:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                      Assinar
+                                      Publicar
                                     </button>
                                   </MenuItem>
                                 )}
@@ -226,11 +249,18 @@ export default function PrivacyPoliciesPage() {
             )}
           </>
         )}
+        <ModalSignPrivacyPolicy
+          open={publishModal ? true : false}
+          setOpen={() => setPublishModal(null)}
+          data={publishModal}
+          onPublish={getAllPolicies}
+        />
         <ModalPolicies
           open={modal ? true : false}
           edit={!modal ? null : typeof modal === "boolean" ? null : modal}
           setOpen={() => setModal(null)}
           onAdded={getAllPolicies}
+          latestVersion={list ? getLatestVersion(list).version : "0.0.0"}
         />
       </DashboardLayout>
     </>
