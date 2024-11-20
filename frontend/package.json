@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "git pull && npm install && next build && pm2 restart frontend"
+    "deploy": "git pull && yarn && yarn build && pm2 restart frontend"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
