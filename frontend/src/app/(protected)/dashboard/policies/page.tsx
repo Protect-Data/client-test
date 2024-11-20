@@ -3,7 +3,6 @@
 import DashboardLayout from "@/components/dashboardLayout";
 import ModalPolicies from "@/components/policies/modalPolicies";
 import ModalSignPrivacyPolicy from "@/components/policies/modalSign";
-import Tooltip from "@/components/tooltip";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import axios from "axios";
 import dayjs from "dayjs";
