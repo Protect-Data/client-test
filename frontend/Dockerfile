@@ -1,42 +1,37 @@
 # Base Node.js image
 FROM node:alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Define a base working directory
 WORKDIR /app
 
-# Define build arguments (to pass environment variables during build)
-ARG NEXT_PUBLIC_AUTH_URL
-ARG NEXT_PUBLIC_AUTH_WS
+# Install dependencies only once
+FROM base AS deps
 
-# Install dependencies based on the preferred package manager
+# Instalar dependências necessárias no sistema
+RUN apk add --no-cache libc6-compat
+
+# Copiar apenas os arquivos necessários para o gerenciamento de pacotes
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 
+# Instalar dependências com base no gerenciador de pacotes detectado
 RUN \
   if [ -f yarn.lock ]; then \
-    echo "Using Yarn for installation" && yarn install --frozen-lockfile; \
+    echo "Using Yarn for dependencies" && yarn install --frozen-lockfile; \
   elif [ -f package-lock.json ]; then \
-    echo "Using npm for installation" && npm ci; \
+    echo "Using npm for dependencies" && npm ci; \
   elif [ -f pnpm-lock.yaml ]; then \
-    echo "Using pnpm for installation" && corepack enable pnpm && pnpm install --frozen-lockfile; \
+    echo "Using pnpm for dependencies" && corepack enable pnpm && pnpm install --frozen-lockfile; \
   else \
     echo "No lockfile found. Ensure yarn.lock, package-lock.json, or pnpm-lock.yaml is present." && exit 1; \
   fi
 
-# Build the project
-FROM base AS builder
-WORKDIR /app
+# Build application in the same layer to save resources
+FROM deps AS builder
 
-# Pass build arguments to this stage
-ARG NEXT_PUBLIC_AUTH_URL
-ARG NEXT_PUBLIC_AUTH_WS
-
-# Make sure the dependencies are copied
-COPY --from=deps /app/node_modules ./node_modules
+# Copiar o restante dos arquivos do projeto
 COPY . .
 
-# Build the application
+# Construir a aplicação
 RUN \
   if [ -f yarn.lock ]; then \
     echo "Building with Yarn" && yarn build; \
@@ -48,31 +43,33 @@ RUN \
     echo "No lockfile found during build step." && exit 1; \
   fi
 
-# Final runtime image
+# Preparar o ambiente final para execução
 FROM base AS runner
-WORKDIR /app
 
-# Environment variables for runtime
+# Definir variáveis de ambiente para runtime
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV NEXT_PUBLIC_AUTH_URL=$NEXT_PUBLIC_AUTH_URL
-ENV NEXT_PUBLIC_AUTH_WS=$NEXT_PUBLIC_AUTH_WS
 
+# Criar usuário para segurança
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
 
-# Copy necessary files from builder stage
+# Copiar os artefatos da build para a imagem final
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./app/.next
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
-# Set proper permissions for `.next`
-RUN chown -R nextjs:nodejs .next && mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+# Configurar permissões para o cache do Next.js
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
 
+# Mudar para o usuário seguro
 USER nextjs
+
+# Expor a porta para o servidor
 EXPOSE 3000
 
+# Comando para iniciar o servidor
 CMD ["node", "server.js"]
