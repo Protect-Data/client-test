@@ -1,75 +1,65 @@
-# Base Node.js image
 FROM node:alpine AS base
 
-# Define a base working directory
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies only once
-FROM base AS deps
-
-# Instalar dependências necessárias no sistema
-RUN apk add --no-cache libc6-compat
-
-# Copiar apenas os arquivos necessários para o gerenciamento de pacotes
+# Install dependencies based on the preferred package manager
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-
-# Instalar dependências com base no gerenciador de pacotes detectado
 RUN \
-  if [ -f yarn.lock ]; then \
-    echo "Using Yarn for dependencies" && yarn install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
-    echo "Using npm for dependencies" && npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then \
-    echo "Using pnpm for dependencies" && corepack enable pnpm && pnpm install --frozen-lockfile; \
-  else \
-    echo "No lockfile found. Ensure yarn.lock, package-lock.json, or pnpm-lock.yaml is present." && exit 1; \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
   fi
 
-# Build application in the same layer to save resources
-FROM deps AS builder
-
-# Copiar o restante dos arquivos do projeto
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Construir a aplicação
 RUN \
-  if [ -f yarn.lock ]; then \
-    echo "Building with Yarn" && yarn build; \
-  elif [ -f package-lock.json ]; then \
-    echo "Building with npm" && npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then \
-    echo "Building with pnpm" && corepack enable pnpm && pnpm build; \
-  else \
-    echo "No lockfile found during build step." && exit 1; \
+  if [ -f yarn.lock ]; then yarn run build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+  else echo "Lockfile not found." && exit 1; \
   fi
 
-# Preparar o ambiente final para execução
 FROM base AS runner
+WORKDIR /app
 
-# Definir variáveis de ambiente para runtime
 ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Uncomment the following line in case you want to disable telemetry during runtime.
+# ENV NEXT_TELEMETRY_DISABLED=1
 
-# Criar usuário para segurança
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copiar os artefatos da build para a imagem final
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
-# Configurar permissões para o cache do Next.js
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
 
-# Mudar para o usuário seguro
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.mjs ./next.config.mjs
+
 USER nextjs
 
-# Expor a porta para o servidor
 EXPOSE 3000
 
-# Comando para iniciar o servidor
+ARG NEXT_PUBLIC_AUTH_URL
+ARG NEXT_PUBLIC_AUTH_WS
+ENV NEXT_PUBLIC_AUTH_URL=$NEXT_PUBLIC_AUTH_URL
+ENV PORT=3000
+
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
