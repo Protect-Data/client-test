@@ -48,8 +48,8 @@ export default function PrivacyPoliciesPage() {
   }
 
   useEffect(() => {
-    if (!list) getAllPolicies();
-  }, [list]);
+    if (session && !list) getAllPolicies();
+  }, [session, list]);
 
   const getAllPolicies = async () => {
     setLoading(true);
