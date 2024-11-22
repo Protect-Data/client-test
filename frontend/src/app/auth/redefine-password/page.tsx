@@ -71,7 +71,7 @@ export default function RedefinePassPage() {
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
           <img
             alt="Protect Data"
-            src="/public/assets/logo-protect-data-white.png"
+            src="/assets/logo-protect-data-white.png"
             className="mx-auto h-10 w-auto invert"
           />
           <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">

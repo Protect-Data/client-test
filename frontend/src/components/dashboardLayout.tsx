@@ -151,7 +151,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <div className="flex h-16 shrink-0 items-center">
                   <img
                     alt="Protect Data"
-                    src="/public/assets/logo-protect-data-white.png"
+                    src="/assets/logo-protect-data-white.png"
                     className="h-8 w-auto"
                   />
                 </div>
@@ -194,7 +194,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className="flex h-16 shrink-0 items-center">
               <img
                 alt="Protect Data"
-                src="/public/assets/logo-protect-data-white.png"
+                src="/assets/logo-protect-data-white.png"
                 className="h-8 w-auto"
               />
             </div>

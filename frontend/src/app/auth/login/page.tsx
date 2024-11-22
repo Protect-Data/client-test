@@ -68,7 +68,7 @@ export default function AuthLoginPage() {
             <Image
               alt="Protect Data"
               fill
-              src="/public/assets/logo-protect-data-white.png"
+              src="/assets/logo-protect-data-white.png"
               className="object-contain"
             />
           </div>
