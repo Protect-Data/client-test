@@ -8,10 +8,12 @@ export default async function LayoutProtected({
 }: {
   children: ReactNode;
 }) {
-  const session = await getServerSession(authOption);
+  const session: any = await getServerSession(authOption);
 
   if (!session) {
     redirect("/auth/login");
+  } else if (session && !session.two_factor.authenticated) {
+    redirect("/auth/two-factor");
   }
 
   return <>{children}</>;

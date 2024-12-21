@@ -4,8 +4,12 @@ import { compare, hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dayjs from "dayjs";
 import { forgotPassMail } from "../services/email.service";
+import { authenticator } from "otplib";
+import QRCode from "qrcode";
 
 const JWT_SECRET = process.env.JWT_SECRET || "PR0TECT_D4T4_JWT";
+const JWT_SECRET_TWOFACTOR =
+  process.env.JWT_SECRET_TWOFACTOR || "PR0TECT_D4T4_JWT_TW0FACT0R";
 
 export const Login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -155,6 +159,82 @@ export const RedefinePass = async (req: Request, res: Response) => {
     return res.status(200).json({});
   } catch (error) {
     console.error("failed to login", error);
+    return res.status(400).json(error);
+  }
+};
+
+export const ActiveTwoFactor = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const userData = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    });
+    if (!userData) {
+      return res.status(400).json({ error: "Sessão inválida" });
+    }
+    if (userData.twoFactorSecret !== null) {
+      return res.status(400).json({ error: "Segundo fator já está ativado" });
+    }
+    const secret = authenticator.generateSecret();
+    const serviceName =
+      process.env.CFG_CLIENT && process.env.CFG_CLIENT !== ""
+        ? `${process.env.CFG_CLIENT} | ProtectData`
+        : "ProtectData";
+    const userIdentifier = userData.email;
+    const otpauth = authenticator.keyuri(userIdentifier, serviceName, secret);
+    const qrCodeImage = await QRCode.toDataURL(otpauth);
+    await prisma.user.update({
+      where: {
+        id: userId
+      },
+      data: {
+        twoFactorSecret: secret
+      }
+    });
+    return res.status(200).json({ qrCodeImage });
+  } catch (error) {
+    console.error("failed to active two factor", error);
+    return res.status(400).json(error);
+  }
+};
+
+export const ValidateTwoFactor = async (req: any, res: Response) => {
+  try {
+    const { id: userId } = req.user;
+    const { code } = req.body;
+    const userData = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        twoFactorSecret: { not: "" }
+      }
+    });
+    if (!userData) {
+      return res.status(400).json({ error: "Dois fatores desativado" });
+    }
+    const isValid = authenticator.check(
+      code,
+      userData.twoFactorSecret as string
+    );
+    if (isValid) {
+      const token = jwt.sign(
+        {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name
+        },
+        JWT_SECRET_TWOFACTOR,
+        { expiresIn: "1h" }
+      );
+      return res
+        .status(200)
+        .json({ message: "Token válido!", success: true, token });
+    } else {
+      return res.status(401).json({ message: "Token inválido!" });
+    }
+  } catch (error) {
+    console.error("failed to validate", error);
     return res.status(400).json(error);
   }
 };

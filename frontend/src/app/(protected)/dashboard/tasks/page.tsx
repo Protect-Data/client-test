@@ -170,7 +170,11 @@ export default function TasksPage() {
                   handleReorder={handleReorder}
                 />
               </DndProviderWrapper> */}
-              <KanbanV2 data={kanban} handleReorder={handleReorder} />
+              <KanbanV2
+                data={kanban}
+                handleReorder={handleReorder}
+                onUpdate={getTasksList}
+              />
             </>
           )
         )}

@@ -3,6 +3,8 @@
 import DashboardLayout from "@/components/dashboardLayout";
 import ModalPolicies from "@/components/policies/modalPolicies";
 import ModalSignPrivacyPolicy from "@/components/policies/modalSign";
+import ModalTerms from "@/components/terms-of-use/modalPolicies";
+import ModalSignTerm from "@/components/terms-of-use/modalSign";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -19,7 +21,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-export default function PrivacyPoliciesPage() {
+export default function TermsOfUsePage() {
   const { data: session }: any = useSession();
   const [loading, setLoading] = useState<boolean>(false);
   const [list, setList] = useState<any>(null);
@@ -54,7 +56,7 @@ export default function PrivacyPoliciesPage() {
   const getAllPolicies = async () => {
     setLoading(true);
     try {
-      const { data: query }: any = await axios.get("/api/v1/policies");
+      const { data: query }: any = await axios.get("/api/v1/terms");
       if (query.error) {
         toast.error(query.error);
         return false;
@@ -74,7 +76,7 @@ export default function PrivacyPoliciesPage() {
         return false;
       }
       const { data: query }: any = await axios.delete(
-        `/api/v1/policies?id=${privId}`
+        `/api/v1/terms?id=${privId}`
       );
       if (query.error) {
         toast.error(query.error);
@@ -95,7 +97,7 @@ export default function PrivacyPoliciesPage() {
         <div className="mb-8 sm:flex sm:items-center">
           <div className="sm:flex-auto">
             <h1 className="text-base font-semibold leading-6 text-zinc-900">
-              Políticas de Privacidade
+              Termos de Uso
             </h1>
             <p className="mt-2 text-sm text-zinc-700">
               Versionamento, atualização e criação de novas versões.
@@ -143,10 +145,10 @@ export default function PrivacyPoliciesPage() {
               <div className="text-center w-full py-8">
                 <AlertTriangle className="mx-auto h-12 w-12 text-zinc-400" />
                 <h3 className="mt-2 text-sm font-semibold text-zinc-900">
-                  Sem Políticas
+                  Sem Termos de Uso
                 </h3>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Sua lista de políticas de privacidade está vazia.
+                  Sua lista de termos de uso está vazia.
                 </p>
               </div>
             ) : (
@@ -199,22 +201,13 @@ export default function PrivacyPoliciesPage() {
                               <div className="py-1">
                                 <MenuItem>
                                   <Link
-                                    href={`/privacy-policy/${x.id}`}
+                                    href={`/terms-of-use/${x.id}`}
                                     target="_blank"
                                     className="w-full block text-left px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900"
                                   >
                                     Visualizar
                                   </Link>
                                 </MenuItem>
-                                {/* <MenuItem>
-                                  <button
-                                    type="button"
-                                    onClick={() => setModal(x)}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:text-gray-900"
-                                  >
-                                    Editar
-                                  </button>
-                                </MenuItem> */}
                                 {session && session.manager && !x.signHash && (
                                   <MenuItem>
                                     <button
@@ -248,13 +241,13 @@ export default function PrivacyPoliciesPage() {
             )}
           </>
         )}
-        <ModalSignPrivacyPolicy
+        <ModalSignTerm
           open={publishModal ? true : false}
           setOpen={() => setPublishModal(null)}
           data={publishModal}
           onPublish={getAllPolicies}
         />
-        <ModalPolicies
+        <ModalTerms
           open={modal ? true : false}
           edit={!modal ? null : typeof modal === "boolean" ? null : modal}
           setOpen={() => setModal(null)}

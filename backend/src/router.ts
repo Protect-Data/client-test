@@ -3,9 +3,16 @@ import {
   createUser,
   deleteUser,
   getAllUser,
+  me,
   updateUser
 } from "./controllers/UserController";
-import { ForgotPass, Login, RedefinePass } from "./controllers/AuthController";
+import {
+  ActiveTwoFactor,
+  ForgotPass,
+  Login,
+  RedefinePass,
+  ValidateTwoFactor
+} from "./controllers/AuthController";
 import {
   createTask,
   deleteTask,
@@ -16,7 +23,7 @@ import {
   updateTask,
   updateTaskStatus
 } from "./controllers/TaskController";
-import verifyToken from "./middleware/verifyToken.middleware";
+import { verifyToken } from "./middleware/verifyToken.middleware";
 import { createComment, deleteComment } from "./controllers/CommentController";
 import {
   commentChecklist,
@@ -47,18 +54,32 @@ import {
   viewPolicieById,
   viewPolicies
 } from "./controllers/PoliciesController";
+import {
+  createTerm,
+  deleteTerm,
+  publishTerm,
+  updateTerm,
+  viewTerm,
+  viewTermById,
+  viewTerms
+} from "./controllers/TermsController";
+import { clientCfg } from "./controllers/ClientController";
 
 export const router = Router();
 
 // search
 router.post("/search", verifyToken, searchDb);
+router.get("/client", clientCfg);
 
 // auth
 router.post("/auth/login", Login);
 router.post("/auth/forgot-password", ForgotPass);
 router.post("/auth/redefine-password", RedefinePass);
+router.get("/auth/two-factor", verifyToken, ActiveTwoFactor);
+router.post("/auth/two-factor", verifyToken, ValidateTwoFactor);
 
 // users
+router.get("/users/me", verifyToken, me);
 router.get("/users", verifyToken, getAllUser);
 router.post("/users", verifyToken, createUser);
 router.put("/users/:id", verifyToken, updateUser);
@@ -115,3 +136,12 @@ router.get("/policies/publish/:id", verifyToken, publishPolicie);
 router.post("/policies", verifyToken, createPolicie);
 router.put("/policies/:id", verifyToken, updatePolicie);
 router.delete("/policies/:id", verifyToken, deletePolicie);
+
+// use terms
+router.get("/term/:id", viewTerm); // public view
+router.get("/terms", verifyToken, viewTerms);
+router.get("/terms/:id", verifyToken, viewTermById);
+router.get("/terms/publish/:id", verifyToken, publishTerm);
+router.post("/terms", verifyToken, createTerm);
+router.put("/terms/:id", verifyToken, updateTerm);
+router.delete("/terms/:id", verifyToken, deleteTerm);

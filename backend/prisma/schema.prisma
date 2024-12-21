@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
-  name       String
-  password   String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  manager    Boolean  @default(false)
+  id              String   @id @default(uuid())
+  email           String   @unique
+  name            String
+  password        String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  manager         Boolean  @default(false)
+  twoFactorSecret String?
 
   tasks             Task[]
   checklist         CheckList[]
@@ -26,6 +27,7 @@ model User {
   assignedChecklist CheckList[]     @relation("ChecklistMembers")
   clientAnswers     ClientAnswers[]
   policies          PrivacyPolicy[]
+  useterms          UseTerms[]
 
   @@map("users")
 }
@@ -210,6 +212,21 @@ model PrivacyPolicy {
   user   User   @relation(fields: [userId], references: [id])
 
   @@map("politics")
+}
+
+model UseTerms {
+  id         String   @id @unique @default(uuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  author     String?
+  version    String   @default("1.0")
+  signHash   String?
+  content    String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("terms")
 }
 
 model Log {

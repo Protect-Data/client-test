@@ -11,14 +11,17 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { ReactSortable } from "react-sortablejs";
+import ModalTaskDetail from "../tasks/ModalTask";
 
 function Column({
   status,
   cards,
+  onUpdate,
   moveCard
 }: {
   status: string;
   cards: any;
+  onUpdate: () => void;
   moveCard: (e: any) => void;
 }) {
   return (
@@ -44,7 +47,7 @@ function Column({
           className="space-y-4"
         >
           {cards.map((item: any) => (
-            <Card key={item.id} item={item} />
+            <Card key={item.id} item={item} onUpdate={onUpdate} />
           ))}
         </ReactSortable>
       </div>
@@ -52,60 +55,74 @@ function Column({
   );
 }
 
-function Card({ item }: any) {
+function Card({ item, onUpdate }: any) {
+  const [modalTask, setModalTask] = useState<any>(null);
+
   return (
-    <div className="p-4 bg-white border border-zinc-200 shadow-md rounded-lg transition-transform duration-150 ease-in-out">
-      <div className="w-full flex justify-between items-center">
-        <span
-          // onClick={() => setModalTask(item)}
-          className="text-base font-semibold cursor-pointer flex items-center gap-x-2"
-        >
-          {item.privacy === "private" && <Lock size={16} />}
-          {item.title}
-        </span>
-        <div>
-          <button
-            // onClick={() => setModalTask(item)}
-            className="p-2 bg-zinc-200 hover:bg-zinc-300 rounded-md transition duration-300 ease-in-out"
+    <>
+      <div className="p-4 bg-white border border-zinc-200 shadow-md rounded-lg transition-transform duration-150 ease-in-out">
+        <div className="w-full flex justify-between items-center">
+          <span
+            onClick={() => setModalTask(item)}
+            className="text-base font-semibold cursor-pointer flex items-center gap-x-2"
           >
-            <ExternalLink size={12} />
-          </button>
+            {item.privacy === "private" && <Lock size={16} />}
+            {item.title}
+          </span>
+          <div>
+            <button
+              onClick={() => setModalTask(item)}
+              className="p-2 bg-zinc-200 hover:bg-zinc-300 rounded-md transition duration-300 ease-in-out"
+            >
+              <ExternalLink size={12} />
+            </button>
+          </div>
+        </div>
+        <div className="w-full pt-2 text-zinc-500">
+          {item.description && item.description !== ""
+            ? `${item.description.substring(0, 160)}${
+                item.description.length > 160 ? `...` : ``
+              }`
+            : "Descrição vazia."}
+        </div>
+        <div className="w-full mt-4 flex flex-col xl:flex-row gap-y-4 justify-between items-center">
+          <div className="flex items-center gap-x-4 font-medium text-xs text-zinc-600">
+            <span className="flex items-center gap-x-1">
+              <CheckSquare2 size={12} /> {item.checklist.length} Checklist
+            </span>
+            <span className="flex items-center gap-x-1">
+              <MessageCircle size={12} /> {item.comments.length} Comentário
+              {item.comments.length !== 1 ? `s` : null}
+            </span>
+            <span className="flex items-center gap-x-1">
+              <Paperclip size={12} /> {item.files.length} Anexo
+              {item.files.length !== 1 ? `s` : null}
+            </span>
+          </div>
+          <span className="flex items-center justify-center gap-x-2 w-full xl:w-auto bg-protectdata-500/20 p-2 px-3 text-xs font-medium rounded-md">
+            <Clock size={12} /> {dayjs(item.created_at).format("DD/MM HH:mm")}
+          </span>
         </div>
       </div>
-      <div className="w-full pt-2 text-zinc-500">
-        {item.description && item.description !== ""
-          ? `${item.description.substring(0, 160)}${
-              item.description.length > 160 ? `...` : ``
-            }`
-          : "Descrição vazia."}
-      </div>
-      <div className="w-full mt-4 flex flex-col xl:flex-row gap-y-4 justify-between items-center">
-        <div className="flex items-center gap-x-4 font-medium text-xs text-zinc-600">
-          <span className="flex items-center gap-x-1">
-            <CheckSquare2 size={12} /> {item.checklist.length} Checklist
-          </span>
-          <span className="flex items-center gap-x-1">
-            <MessageCircle size={12} /> {item.comments.length} Comentário
-            {item.comments.length !== 1 ? `s` : null}
-          </span>
-          <span className="flex items-center gap-x-1">
-            <Paperclip size={12} /> {item.files.length} Anexo
-            {item.files.length !== 1 ? `s` : null}
-          </span>
-        </div>
-        <span className="flex items-center justify-center gap-x-2 w-full xl:w-auto bg-protectdata-500/20 p-2 px-3 text-xs font-medium rounded-md">
-          <Clock size={12} /> {dayjs(item.created_at).format("DD/MM HH:mm")}
-        </span>
-      </div>
-    </div>
+      <ModalTaskDetail
+        open={modalTask ? true : false}
+        setOpen={() => {
+          setModalTask(false);
+        }}
+        data={modalTask}
+        handleUpdate={onUpdate}
+      />
+    </>
   );
 }
 
 export default function KanbanV2({
   data,
-  handleReorder
+  handleReorder,
+  onUpdate
 }: {
   data: any;
+  onUpdate: () => void;
   handleReorder: (status: string, list: any) => void;
 }) {
   return (
@@ -116,6 +133,7 @@ export default function KanbanV2({
             key={k}
             status={x.title}
             cards={x.list}
+            onUpdate={onUpdate}
             moveCard={(newList: any) => {
               handleReorder(x.title, newList);
             }}

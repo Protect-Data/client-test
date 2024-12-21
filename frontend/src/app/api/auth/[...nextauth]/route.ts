@@ -50,8 +50,8 @@ export const authOption: NextAuthOptions = {
     async session({ session, token }) {
       session = token.user as any;
       // register or login
-      /*if (session) {
-        const { data: user } = await axios.get(`${API_URL}/users`, {
+      if (session) {
+        const { data: user } = await axios.get(`${API_URL}/users/me`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: cookies().get("protectdata.session")
@@ -59,11 +59,8 @@ export const authOption: NextAuthOptions = {
               : ""
           }
         });
-        if(user.email === 'dougpicaxvi@gmail.com'){
-          user.isAdmin = true;
-        }
         return {...session, ...user};
-      }*/
+      }
       return session;
     }
   }

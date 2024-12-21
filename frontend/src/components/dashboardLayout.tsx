@@ -19,13 +19,12 @@ import {
   ChevronDown,
   EarthLock,
   GlobeLock,
-  HomeIcon,
-  ListIcon,
+  Lock,
   MenuIcon,
+  Newspaper,
   PaperclipIcon,
-  Plug,
+  PencilLine,
   Search,
-  Stethoscope,
   UsersIcon,
   X
 } from "lucide-react";
@@ -34,13 +33,7 @@ import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import AvatarName from "./avatarName";
 import SearchPallete from "./commandPallete";
-
-const teams = [
-  { id: 1, name: "Heroicons", href: "#", initial: "H", current: false },
-  { id: 2, name: "Tailwind Labs", href: "#", initial: "T", current: false },
-  { id: 3, name: "Workcation", href: "#", initial: "W", current: false }
-];
-const userNavigation: any = [];
+import Link from "next/link";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [search, setSearch] = useState<boolean>(false);
@@ -80,6 +73,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             href: "/dashboard/policies",
             icon: GlobeLock,
             current: pathname.includes("/dashboard/policies")
+          },
+          {
+            name: "Termos de Uso",
+            href: "/dashboard/terms-of-use",
+            icon: PencilLine,
+            current: pathname.includes("/dashboard/terms-of-use")
           },
           {
             name: "Relatórios",
@@ -223,31 +222,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     ))}
                   </ul>
                 </li>
-                <li className="sm:hidden">
-                  <div className="text-xs font-semibold leading-6 text-zinc-400">
-                    Diagnósticos
-                  </div>
-                  <ul role="list" className="-mx-2 mt-2 space-y-1">
-                    {teams.map((team) => (
-                      <li key={team.name}>
-                        <a
-                          href={team.href}
-                          className={classNames(
-                            team.current
-                              ? "bg-zinc-800 text-white"
-                              : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
-                            "group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6"
-                          )}
-                        >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-[0.625rem] font-medium text-zinc-400 group-hover:text-white">
-                            {team.initial}
-                          </span>
-                          <span className="truncate">{team.name}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
               </ul>
             </nav>
           </div>
@@ -291,13 +265,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 />
               </div>
               <div className="flex items-center gap-x-4 lg:gap-x-6">
-                <button
+                {/* <button
                   type="button"
                   className="-m-2.5 p-2.5 text-zinc-400 hover:text-zinc-500"
                 >
                   <span className="sr-only">View notifications</span>
                   <Bell aria-hidden="true" className="h-6 w-6" />
-                </button>
+                </button> */}
 
                 {/* Separator */}
                 <div
@@ -332,22 +306,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </MenuButton>
                   <MenuItems
                     transition
-                    className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-zinc-900/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                    className="absolute right-0 z-10 mt-2.5 w-36 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-zinc-900/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
                   >
-                    {userNavigation.map((item: any) => (
-                      <MenuItem key={item.name}>
-                        <a
-                          href={item.href}
-                          className="block px-3 py-1 text-sm leading-6 text-zinc-900 data-[focus]:bg-zinc-50"
-                        >
-                          {item.name}
-                        </a>
-                      </MenuItem>
-                    ))}
                     <MenuItem>
                       <button
                         onClick={() => signOut({ callbackUrl: "/auth/login" })}
-                        className="block w-full px-3 py-1 text-sm leading-6 text-zinc-900 data-[focus]:bg-zinc-50"
+                        className="block w-full px-3 py-1 text-sm text-left leading-6 text-zinc-900 data-[focus]:bg-zinc-50"
                       >
                         Deslogar
                       </button>

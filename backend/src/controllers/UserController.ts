@@ -3,6 +3,41 @@ import { Request, Response } from "express";
 
 import { prisma } from "../database/prisma";
 
+export const me = async (req: any, res: Response) => {
+  try {
+    const { id: userId, "2fa": is_2fa } = req.user;
+    const user: any = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        manager: true,
+        twoFactorSecret: true
+      }
+    });
+    if (!user) {
+      return res.status(400).json({ error: "Sessão inválida" });
+    }
+    // console.log("user", user);
+    return res.status(201).json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      manager: user.manager,
+      two_factor: {
+        active: !!user.twoFactorSecret,
+        authenticated: is_2fa
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json(error);
+  }
+};
+
 export const createUser = async (req: Request, res: Response) => {
   try {
     const { name, email, password, manager } = req.body;
