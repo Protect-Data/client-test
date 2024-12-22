@@ -5,7 +5,6 @@ import { Dialog, DialogBackdrop, DialogPanel, Switch } from "@headlessui/react";
 import { Loader2, Trash2, X } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useSession } from "next-auth/react";
 
 export default function ModalCrudUser({
   open,

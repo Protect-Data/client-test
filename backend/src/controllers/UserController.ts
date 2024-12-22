@@ -85,14 +85,18 @@ export const getAllUser = async (req: Request, res: Response) => {
         id: true,
         name: true,
         email: true,
-        manager: true
+        manager: true,
+        twoFactorSecret: true
       }
     });
-
     if (!users) {
       return res.status(204);
     }
-    return res.status(200).json(users);
+    const updatedUsers = users.map((user: any) => ({
+      ...user,
+      twoFactorSecret: !!user.twoFactorSecret
+    }));
+    return res.status(200).json(updatedUsers);
   } catch (error) {
     return res.status(400).json(error);
   }

@@ -3,15 +3,19 @@
 import dayjs from "dayjs";
 import {
   CheckSquare2,
+  ClipboardList,
   Clock,
   ExternalLink,
   Lock,
   MessageCircle,
-  Paperclip
+  Paperclip,
+  PlusIcon
 } from "lucide-react";
 import React, { useState } from "react";
 import { ReactSortable } from "react-sortablejs";
 import ModalTaskDetail from "../tasks/ModalTask";
+import { useSession } from "next-auth/react";
+import DrawerAddTask from "../tasks/DrawerAddTask";
 
 function Column({
   status,
@@ -24,6 +28,9 @@ function Column({
   onUpdate: () => void;
   moveCard: (e: any) => void;
 }) {
+  const { data: session }: any = useSession();
+  const [modalAdd, setModalAdd] = useState(false);
+
   return (
     <>
       <div className="flex flex-col gap-y-4">
@@ -46,10 +53,44 @@ function Column({
           // }}
           className="space-y-4"
         >
-          {cards.map((item: any) => (
-            <Card key={item.id} item={item} onUpdate={onUpdate} />
-          ))}
+          {!cards || cards.length <= 0 ? (
+            <div className="text-center w-full py-5">
+              <ClipboardList className="mx-auto h-12 w-12 text-zinc-400" />
+              <h3 className="mt-2 text-sm font-semibold text-zinc-900">
+                Sem registros
+              </h3>
+              <p className="mt-1 text-sm text-zinc-500">
+                {`Lista ${status} Vazia.`}
+              </p>
+            </div>
+          ) : (
+            cards.map((item: any) => (
+              <Card key={item.id} item={item} onUpdate={onUpdate} />
+            ))
+          )}
         </ReactSortable>
+        {session && session.manager && (
+          <>
+            <button
+              onClick={() => setModalAdd(true)}
+              className="w-full border-2 text-zinc-400 hover:bg-zinc-200 font-semibold border-dashed rounded-md p-2 flex justify-center items-center mt-4 gap-x-2 transition duration-300 ease-in-out"
+            >
+              <PlusIcon size={16} />
+              Nova Tarefa
+            </button>
+            <DrawerAddTask
+              open={modalAdd}
+              defaultStatus={
+                status === "Em Progresso" ? 1 : status === "Finalizado" ? 2 : 0
+              }
+              setOpen={setModalAdd}
+              onAdded={() => {
+                onUpdate();
+                setModalAdd(false);
+              }}
+            />
+          </>
+        )}
       </div>
     </>
   );

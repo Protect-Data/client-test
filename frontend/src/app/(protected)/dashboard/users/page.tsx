@@ -76,6 +76,12 @@ export default function UsersPage() {
                     </th>
                     <th
                       scope="col"
+                      className="px-4 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Segundo Fator
+                    </th>
+                    <th
+                      scope="col"
                       className="py-3.5 pl-4 pr-4 text-left text-sm font-semibold text-gray-900 sm:pr-0"
                     >
                       Ações
@@ -95,7 +101,7 @@ export default function UsersPage() {
                         <td className="whitespace-nowrap p-4 text-sm text-gray-500">
                           {x.manager ? (
                             <>
-                              <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                              <span className="inline-flex items-center rounded-full bg-protectdata-50 px-2 py-1 text-xs font-medium text-protectdata-700 ring-1 ring-inset ring-protectdata-600/20">
                                 Administrador
                               </span>
                             </>
@@ -103,6 +109,21 @@ export default function UsersPage() {
                             <>
                               <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
                                 Usuário
+                              </span>
+                            </>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap p-4 text-sm text-gray-500">
+                          {x.twoFactorSecret ? (
+                            <>
+                              <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                Ativado
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-500/10">
+                                Inativo
                               </span>
                             </>
                           )}
