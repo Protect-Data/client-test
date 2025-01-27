@@ -165,7 +165,7 @@ export default function ReportsPage() {
                     disabled
                     className="flex items-center gap-x-1 disabled:cursor-not-allowed disabled:opacity-50 bg-zinc-100 text-zinc-500 text-sm p-2 px-4 font-semibold rounded-lg"
                   >
-                    2024 <ChevronDown size={16} />
+                    {dayjs().format("YYYY")} <ChevronDown size={16} />
                   </button>
                 </div>
                 <div className="max-h-[240px] min-h-[240px] w-full text-xs p-1 md:p-2">
