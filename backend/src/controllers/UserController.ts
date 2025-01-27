@@ -106,30 +106,39 @@ export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, email, password, manager } = req.body;
-
     const findUser = await prisma.user.findUnique({
       where: {
         id
       }
     });
-
     if (!findUser) {
       return res.status(400).json({ message: "Usuário não encontrado" });
     }
-
     const user = await prisma.user.update({
       where: {
         id
       },
       data: {
-        name
+        name,
+        email,
+        manager
       },
       select: {
         id: true,
         name: true
       }
     });
-
+    if (password !== "") {
+      const hashPassword = await hash(password, 8);
+      await prisma.user.update({
+        where: {
+          id
+        },
+        data: {
+          password: hashPassword
+        }
+      });
+    }
     return res.status(201).json(user);
   } catch (error) {
     console.error(error);
@@ -154,6 +163,9 @@ export const deleteUser = async (req: Request, res: Response) => {
     const user = await prisma.user.delete({
       where: {
         id
+      },
+      select: {
+        id: true
       }
     });
 

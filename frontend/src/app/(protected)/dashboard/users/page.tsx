@@ -3,12 +3,14 @@
 import DashboardLayout from "@/components/dashboardLayout";
 import ModalCrudUser from "@/components/users/ModalUser";
 import axios from "axios";
-import { Edit2, Trash2, UserMinusIcon } from "lucide-react";
+import { Edit2, Loader2, Trash2, UserMinusIcon } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function UsersPage() {
   const { data: session }: any = useSession();
+  const [loading2fa, setLoading2fa] = useState<boolean>(false);
   const [modalAdd, setModalAdd] = useState<boolean>(false);
   const [editUser, setEditUser] = useState<any>(null);
   const [deleteUser, setDeleteUser] = useState<string | null>(null);
@@ -25,6 +27,22 @@ export default function UsersPage() {
       setList(list);
     } catch (error) {
       console.error("getListApi", error);
+    }
+  };
+
+  const handleReset2fa = async (user: any) => {
+    setLoading2fa(true);
+    try {
+      const { data: list } = await axios.delete(
+        `/api/v1/users/2fa?userId=${user.id}`
+      );
+      console.log("handleReset2fa", list);
+      getListApi();
+    } catch (error) {
+      console.error("handleReset2fa", error);
+      toast.error(`Falha ao resetar o segundo fator de ${user.name}...`);
+    } finally {
+      setLoading2fa(false);
     }
   };
 
@@ -116,9 +134,23 @@ export default function UsersPage() {
                         <td className="whitespace-nowrap p-4 text-sm text-gray-500">
                           {x.twoFactorSecret ? (
                             <>
-                              <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                Ativado
-                              </span>
+                              <div className="group flex items-center">
+                                <button
+                                  type="button"
+                                  disabled={loading2fa}
+                                  onClick={() => handleReset2fa(x)}
+                                  className="hidden group-hover:flex text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-25 justify-center items-center gap-x-1 p-1 px-2 border rounded-full bg-red-100 text-red-500 border-red-300"
+                                >
+                                  {loading2fa ? (
+                                    <Loader2 className="mx-auto animate-spin" />
+                                  ) : (
+                                    `Resetar`
+                                  )}
+                                </button>
+                                <span className="group-hover:hidden inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                  Ativado
+                                </span>
+                              </div>
                             </>
                           ) : (
                             <>

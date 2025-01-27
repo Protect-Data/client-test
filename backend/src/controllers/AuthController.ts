@@ -238,3 +238,44 @@ export const ValidateTwoFactor = async (req: any, res: Response) => {
     return res.status(400).json(error);
   }
 };
+
+export const DisableTwoFactor = async (req: any, res: Response) => {
+  try {
+    const { id: admId } = req.user;
+    const { userId } = req.params;
+    // is admin
+    const userAdmin = await prisma.user.findUnique({
+      where: {
+        id: admId,
+        manager: true
+      }
+    });
+    if (!userAdmin) {
+      return res
+        .status(400)
+        .json({ error: "Falha ao redefinir o dois fatores." });
+    }
+    // do action
+    const userData = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        twoFactorSecret: { not: "" }
+      }
+    });
+    if (!userData) {
+      return res.status(400).json({ error: "Dois fatores já está desativado" });
+    }
+    await prisma.user.update({
+      where: {
+        id: userId
+      },
+      data: {
+        twoFactorSecret: null
+      }
+    });
+    return res.status(400).json({ error: "Dois fatores foi desativado" });
+  } catch (error) {
+    console.error("failed to validate", error);
+    return res.status(400).json(error);
+  }
+};

@@ -8,6 +8,7 @@ import {
 } from "./controllers/UserController";
 import {
   ActiveTwoFactor,
+  DisableTwoFactor,
   ForgotPass,
   Login,
   RedefinePass,
@@ -77,6 +78,7 @@ router.post("/auth/forgot-password", ForgotPass);
 router.post("/auth/redefine-password", RedefinePass);
 router.get("/auth/two-factor", verifyToken, ActiveTwoFactor);
 router.post("/auth/two-factor", verifyToken, ValidateTwoFactor);
+router.delete("/auth/two-factor/:userId", verifyToken, DisableTwoFactor);
 
 // users
 router.get("/users/me", verifyToken, me);

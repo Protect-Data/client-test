@@ -33,9 +33,12 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const data = await req.json();
-    const { name, userId } = data;
+    const { name, email, manager, password, userId } = data;
     const query: any = await httpClient.put(`/users/${userId}`, {
-      name
+      name,
+      email,
+      manager,
+      password
     });
     return NextResponse.json({ ...query });
   } catch (err) {
