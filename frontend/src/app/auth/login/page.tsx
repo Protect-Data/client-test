@@ -1,5 +1,6 @@
 "use client";
 
+import ReCaptchaCustom from "@/components/recaptcha";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
@@ -10,6 +11,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
+
+const recaptchaKey = process.env.RECAPTCHA_KEY || "";
 
 type LoginSchema = {
   email: string;
@@ -36,8 +39,17 @@ export default function AuthLoginPage() {
   });
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  const handleReCaptchaChange = (token: string) => {
+    setCaptchaToken(token);
+  };
 
   const handleLogin = async (data: any) => {
+    if (recaptchaKey && !captchaToken) {
+      toast.error(`Captcha obrigatório.`);
+      return;
+    }
     try {
       const { email, password } = data;
       setLoading(true);
@@ -48,7 +60,7 @@ export default function AuthLoginPage() {
       });
       if (resultSignin?.status !== 200) {
         setLoading(false);
-        toast.error(`${resultSignin?.error}`);
+        toast.error(`${resultSignin?.error || "Credenciais inválidas"}`);
       } else {
         router.push("/");
       }
@@ -124,6 +136,7 @@ export default function AuthLoginPage() {
                   className="block w-full outline-none px-3 rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-protectdata-500 sm:text-sm sm:leading-6"
                 />
               </div>
+              <ReCaptchaCustom onChange={handleReCaptchaChange} />
             </div>
 
             <div>

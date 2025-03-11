@@ -38,7 +38,7 @@ export const Login = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name
       },
-      JWT_SECRET,
+      JWT_SECRET_TWOFACTOR,
       { expiresIn: "48h" }
     );
     // await createLog("Iniciou uma sessão", user.id, null);
@@ -59,45 +59,48 @@ export const Login = async (req: Request, res: Response) => {
 };
 
 export const ForgotPass = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  return res.status(500).json({
+    message:
+      "Redefinição de senha desativada, entre em contato com o administrador."
+  });
+  // try {
+  //   const { email } = req.body;
+  //   const user = await prisma.user.findUnique({
+  //     where: { email }
+  //   });
+  //   if (!user) {
+  //     return res.status(401).json({ message: "Email não encontrado" });
+  //   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
-    if (!user) {
-      return res.status(401).json({ message: "Email não encontrado" });
-    }
+  //   const randomNum = Math.random() * 9000;
+  //   const code = Math.floor(1000 + randomNum);
 
-    const randomNum = Math.random() * 9000;
-    const code = Math.floor(1000 + randomNum);
+  //   // FORGOT PASSWORD
+  //   const redefineCode = await prisma.redefinePass.create({
+  //     data: {
+  //       expires_at: dayjs().add(15, "minutes").toISOString(),
+  //       email,
+  //       code: code.toString()
+  //     },
+  //     select: {
+  //       id: true,
+  //       expires_at: true,
+  //       email: true
+  //     }
+  //   });
 
-    // FORGOT PASSWORD
-    const redefineCode = await prisma.redefinePass.create({
-      data: {
-        expires_at: dayjs().add(15, "minutes").toISOString(),
-        email,
-        code: code.toString()
-      },
-      select: {
-        id: true,
-        expires_at: true,
-        email: true
-      }
-    });
+  //   // SEND EMAIL
+  //   await forgotPassMail({
+  //     email,
+  //     code: code.toString(),
+  //     name: user.name
+  //   });
 
-    // SEND EMAIL
-    await forgotPassMail({
-      email,
-      code: code.toString(),
-      name: user.name
-    });
-
-    return res.status(200).json(redefineCode);
-  } catch (error) {
-    console.error("failed to login", error);
-    return res.status(400).json(error);
-  }
+  //   return res.status(200).json(redefineCode);
+  // } catch (error) {
+  //   console.error("failed to login", error);
+  //   return res.status(400).json(error);
+  // }
 };
 
 export const RedefinePass = async (req: Request, res: Response) => {
@@ -224,7 +227,7 @@ export const ValidateTwoFactor = async (req: any, res: Response) => {
           email: userData.email,
           name: userData.name
         },
-        JWT_SECRET_TWOFACTOR,
+        JWT_SECRET,
         { expiresIn: "1h" }
       );
       return res
